@@ -1,0 +1,27 @@
+[93m (                 (     [0m
+[93m )\ )        *   ) )\ )  [0m
+[93m(()/(  (   ` )  /((()/(  [0m
+[93m /(_)) )\   ( )(_))/(_)) [0m
+[93m(_))  ((_) (_(_())(_))   [0m
+[92m| |   | __||_   _|/ __|  [0m
+[92m| |__ | _|   | |  \__ \  [0m
+[92m|____||___|  |_|  |___/  
+[0m
+[92m> Welcome to the Latest Essential Tatoe Server v1.12.0[0m
+[92m> Made by the Ripple team[0m
+[92m> [4mhttps://git.zxq.co/ripple/lets[0m
+[92m> Press CTRL+C to exit
+[0m
+> Reading config file... [92mDone[0m
+> Checking oppai... [92mDone[0m
+> Checking folders... [92mDone[0m
+> Connecting to MySQL database...  [92mDone[0m
+> Connecting to redis...  [92mDone[0m
+> Creating threads pool... [92mDone[0m
+[93m[!] Warning! Discord logging is disabled![0m
+[93m[!] Warning! Sentry logging is disabled![0m
+[93m[!] Warning! Datadog stats tracking is disabled![0m
+[92m> L.E.T.S. is listening for clients on 127.0.0.1:5002...[0m
+[92m[2017-01-30 13:40:51] INFO[0m - [0mSubscribed to redis pubsub channels: ['lets:beatmap_updates'][0m
+> Disposing server... 
+[92mGoodbye![0m
