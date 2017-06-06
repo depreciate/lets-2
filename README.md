@@ -1,8 +1,4 @@
-## LETS [![Code Health](https://landscape.io/github/osuripple/lets/master/landscape.svg?style=flat)](https://landscape.io/github/osuripple/lets/master)
-
-- Origin: https://git.zxq.co/ripple/lets
-- Mirror: https://github.com/osuripple/lets
-
+## LETS
 ## Latest Essential Tatoe Server
 This server handles every non real time client feature, so:
 - Ingame scoreboards
@@ -26,11 +22,7 @@ This server handles every non real time client feature, so:
 - oppai
 
 ## How to set up LETS
-First of all, initialize and update the submodules
-```
-$ git submodule init && git submodule update
-```
-afterwards, install the required dependencies with pip
+First, install the required dependencies with pip
 ```
 $ pip install -r requirements.txt
 ```
