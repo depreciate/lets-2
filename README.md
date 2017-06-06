@@ -63,4 +63,6 @@ For a full list of all the arguments supported by `tomejerry`, run `python3 tome
 ## License
 This project is licensed under the GNU AGPL 3 License.  
 See the "LICENSE" file for more information.  
-This project contains code taken by reference from [osu-performance](https://github.com/ppy/osu-performance) by Tom94.
+This project contains code taken by reference from [osu-performance](https://github.com/ppy/osu-performance) by Tom94.  
+© 2017 Mikhail Tretyakov 
+© 2016-2017 Giuseppe Guerra
