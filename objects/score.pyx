@@ -226,15 +226,13 @@ class score:
 				withThisMods = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed>= 3 AND mods = %s ORDER BY pp DESC LIMIT 1", [userID, self.fileMd5, self.gameMode, self.mods])
 				ok_sub = False
 				if self.gameMode == gameModes.STD:
-
+					#New peppy feature pp > score
 					if((self.mods != personalBest["mods"]) or (self.mods & 536870912 > 0)) :
-						log.info("new {} old {}".format(self.pp, personalBest["pp"]))
 						if(self.pp > personalBest["pp"]):
 							self.completed = 3
 							self.rankedScoreIncrease = self.score-personalBest["score"]
 							self.oldPersonalBest = 0
-							glob.db.exвыecute("UPDATE scores SET completed = 4 WHERE id = %s",[personalBest["id"]])
-							log.info("okkkk")
+							glob.db.execute("UPDATE scores SET completed = 4 WHERE id = %s",[personalBest["id"]])
 							ok_sub = True
 						else:
 							if withThisMods is None:
@@ -243,7 +241,6 @@ class score:
 								self.oldPersonalBest = 0
 							else:
 								if(self.pp > withThisMods["pp"]):
-									#glob.db.execute("UPDATE scores SET completed = 2 WHERE id = %s",[withThisMods["id"]])
 									self.completed = 4
 									self.rankedScoreIncrease=self.score
 									self.oldPersonalBest = withThisMods["id"]
@@ -251,7 +248,6 @@ class score:
 						
 				# Compare personal best's score with current score
 				if(ok_sub == False):
-					log.info("ne okkkkk")
 					if self.score > personalBest["score"]:
 						# New best score
 						self.completed = 3

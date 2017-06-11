@@ -27,7 +27,9 @@ def osuApiRequest(request, params, getFirst=True):
 	try:
 		finalURL = "{}/api/{}?k={}&{}".format(glob.conf.config["osuapi"]["apiurl"], request, glob.conf.config["osuapi"]["apikey"], params)
 		log.debug(finalURL)
-		resp = requests.get(finalURL, timeout=5).text
+		resp = requests.get(finalURL, timeout=15).text
+		if resp is None:
+			return "timeout" 
 		data = json.loads(resp)
 		if getFirst:
 			if len(data) >= 1:
@@ -36,6 +38,8 @@ def osuApiRequest(request, params, getFirst=True):
 				resp = None
 		else:
 			resp = data
+	except Exception:
+		return "timeout"
 	finally:
 		glob.dog.increment(glob.DATADOG_PREFIX+".osu_api.requests")
 		return resp

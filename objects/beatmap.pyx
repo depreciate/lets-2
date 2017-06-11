@@ -76,8 +76,12 @@ class beatmap:
 				self.beatmapID
 				])
 
-			glob.db.execute("UPDATE `beatmaps` SET  `latest_update` = %s, `ranked_status_freezed` = %s WHERE beatmap_id = %s ", [
+			glob.db.execute("UPDATE `beatmaps` SET  `latest_update` = %s, `artist` = %s,`title` = %s,`version` = %s, `creator` = %s ,`ranked_status_freezed` = %s WHERE beatmap_id = %s ", [
 			int(time.time()),
+			self.artist.encode("utf-8", "ignore").decode("utf-8"),
+			self.title.encode("utf-8", "ignore").decode("utf-8"),
+			self.version.encode("utf-8", "ignore").decode("utf-8"),
+			self.creator.encode("utf-8", "ignore").decode("utf-8"),
 			frozen,
 			self.beatmapID
 			])
@@ -115,6 +119,7 @@ class beatmap:
 					self.rankingDate if self.rankedStatus > 0 else 0
 				])
 			except:
+				glob.db.execute("DELETE FROM beatmaps WHERE beatmap_id = %s ",[self.beatmapID])
 				self.rankedStatus = rankedStatuses.NEED_UPDATE
 				pass
 
@@ -217,9 +222,16 @@ class beatmap:
 			mainData = dataMania
 
 		if mainData is not None:
-			self.fileMD5 = md5
-			if self.rankedStatusFrozen == 0 and self.rankedStatus > 1:
-				return True
+			try:
+				if mainData == "timeout":
+					log.error(md5+": timeout")
+					return False
+				self.fileMD5 = md5
+				self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
+			except Exception:
+				log.error(mainData)
+				return False
+				pass
 	
 		# Can't fint beatmap by MD5. The beatmap has been updated. Check with beatmap set ID
 		if mainData is None:
@@ -248,7 +260,6 @@ class beatmap:
 				return False
 				pass
 
-		# We have data from osu!api, set beatmap data
 		log.debug("Got beatmap data from osu!api")
 		self.songName = "{} - {} [{}]".format(mainData["artist"], mainData["title"], mainData["version"])
 		self.AR = float(mainData["diff_approach"])
@@ -260,7 +271,6 @@ class beatmap:
 		self.rankingDate = int(time.mktime(datetime.datetime.strptime(mainData["last_update"], "%Y-%m-%d %H:%M:%S").timetuple()))
 		self.version = mainData["version"]
 		self.creator = mainData["creator"]
-		self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
 		self.beatmapID = int(mainData["beatmap_id"])
 		self.beatmapSetID = int(mainData["beatmapset_id"])
 		self.mode = int(mainData["mode"])
@@ -310,7 +320,7 @@ class beatmap:
 				log.debug("beatmap not found in api")
 				# If it's not even in osu!api, this beatmap is not submitted
 				#self.rankedStatus = rankedStatuses.NOT_SUBMITTED
-			elif self.rankedStatus != rankedStatuses.NOT_SUBMITTED and self.rankedStatus != rankedStatuses.NEED_UPDATE:
+			elif self.rankedStatus != rankedStatuses.NOT_SUBMITTED and self.rankedStatus != rankedStatuses.NEED_UPDATE and self.rankedStatus != rankedStatuses.UNKNOWN:
 				log.debug("foun in api")
 				# We get beatmap data from osu!api, save it in db
 				self.addBeatmapToDB()
