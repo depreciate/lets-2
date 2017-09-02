@@ -1,7 +1,6 @@
 import json
 import sys
 import traceback
-import math
 
 import tornado.gen
 import tornado.web
@@ -22,7 +21,6 @@ class handler(requestsManager.asyncRequestHandler):
 	"""
 	Handler for /api/v1/pp
 	"""
-	@tornado.gen.coroutine
 	@tornado.web.asynchronous
 	@tornado.gen.engine
 	@sentry.captureTornado
@@ -62,8 +60,6 @@ class handler(requestsManager.asyncRequestHandler):
 				accuracy = self.get_argument("a")
 				try:
 					accuracy = float(accuracy)
-					if math.isnan(accuracy):
-						accuracy = -1.0
 				except ValueError:
 					raise exceptions.invalidArgumentsException(MODULE_NAME)
 			else:
@@ -80,29 +76,23 @@ class handler(requestsManager.asyncRequestHandler):
 
 			if "c" in self.request.arguments:
 				combo = self.get_argument("c")
-				if not combo.isdigit():
+				try:
+					combo = int(combo)
+				except ValueError:
 					raise exceptions.invalidArgumentsException(MODULE_NAME)
-				combo = int(combo)
 			else:
 				combo = 0
-
 
 			# Print message
 			log.info("Requested pp for beatmap {}".format(beatmapID))
 
 			# Get beatmap md5 from osuapi
 			# TODO: Move this to beatmap object
-			"""osuapiData = osuapiHelper.osuApiRequest("get_beatmaps", "b={}".format(beatmapID))
+			osuapiData = osuapiHelper.osuApiRequest("get_beatmaps", "b={}".format(beatmapID))
 			if osuapiData is None or "file_md5" not in osuapiData or "beatmapset_id" not in osuapiData:
 				raise exceptions.invalidBeatmapException(MODULE_NAME)
 			beatmapMd5 = osuapiData["file_md5"]
-			beatmapSetID = osuapiData["beatmapset_id"]"""
-			dbData = glob.db.fetch("SELECT beatmap_md5, beatmapset_id FROM beatmaps WHERE beatmap_id = {}".format(beatmapID))
-			if dbData is None:
-				raise exceptions.invalidBeatmapException(MODULE_NAME)
-
-			beatmapMd5 = dbData["beatmap_md5"]
-			beatmapSetID = dbData["beatmapset_id"]
+			beatmapSetID = osuapiData["beatmapset_id"]
 
 			# Create beatmap object
 			bmap = beatmap.beatmap(beatmapMd5, beatmapSetID)
@@ -114,18 +104,21 @@ class handler(requestsManager.asyncRequestHandler):
 			returnPP = []
 			if gameMode == gameModes.STD and bmap.starsStd == 0:
 				# Mode Specific beatmap, auto detect game mode
-				raise exceptions.unsupportedGameModeException
-			if accuracy > 100 or combo > bmap.maxCombo or misses < 0 or math.isnan(accuracy):
-				raise exceptions.invalidArgumentsException(MODULE_NAME)
+				if bmap.starsTaiko > 0:
+					gameMode = gameModes.TAIKO
+				if bmap.starsCtb > 0:
+					gameMode = gameModes.CTB
+				if bmap.starsMania > 0:
+					gameMode = gameModes.MANIA
+
 			# Calculate pp
 			if gameMode == gameModes.STD:
 				# Std pp
-				if accuracy < 0 and combo == 0 and misses == 0:
+				if accuracy < 0 and modsEnum == 0:
 					# Generic acc
 					# Get cached pp values
-					log.warning("requested pp for bm {} acc {} mods {} ".format(bmap.songName, accuracy, modsEnum))
 					cachedPP = bmap.getCachedTillerinoPP()
-					if(modsEnum == 0 and cachedPP != [0,0,0,0]):
+					if cachedPP != [0,0,0,0]:
 						log.debug("Got cached pp.")
 						returnPP = cachedPP
 					else:
@@ -133,11 +126,11 @@ class handler(requestsManager.asyncRequestHandler):
 						# Cached pp not found, calculate them
 						oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=True, stars=True)
 						returnPP = oppai.pp
-						bmap.starsStd = oppai.stars
+						bmap.stars = oppai.stars
 
 						# Cache values in DB
 						log.debug("Saving cached pp...")
-						if(modsEnum == 0 and len(returnPP) == 4):
+						if len(returnPP) == 4:
 							bmap.saveCachedTillerinoPP(returnPP)
 				else:
 					# Specific accuracy, calculate
@@ -152,7 +145,7 @@ class handler(requestsManager.asyncRequestHandler):
 					if misses > 0:
 						oppai.misses = misses	
 					oppai.getPP()
-					returnPP.append(oppai.pp)
+					returnPP = oppai.pp
 			else:
 				raise exceptions.unsupportedGameModeException
 
@@ -166,6 +159,7 @@ class handler(requestsManager.asyncRequestHandler):
 				"od": bmap.OD,
 				"bpm": bmap.bpm,
 			}
+
 			# Set status code and message
 			statusCode = 200
 			data["message"] = "ok"

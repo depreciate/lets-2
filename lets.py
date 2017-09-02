@@ -42,7 +42,8 @@ from helpers import config
 from helpers import consoleHelper
 from common import generalUtils
 from objects import glob
-from pubSubHandlers import beatmapUpdateHandler
+from objects import beatmapUpdater as bu
+from pubSubHandlers import beatmapUpdateHandler 
 
 
 def make_app():
@@ -226,7 +227,7 @@ if __name__ == "__main__":
 		pubSub.listener(glob.redis, {
 			"lets:beatmap_updates": beatmapUpdateHandler.handler(),
 		}).start()
-
+		bu.BeatmapUpdater(time=25)
 		# Start Tornado
 		http_server = tornado.httpserver.HTTPServer(glob.application)
 		http_server.listen(serverPort)
@@ -235,4 +236,4 @@ if __name__ == "__main__":
 		# Perform some clean up
 		print("> Disposing server... ")
 		glob.fileBuffers.flushAll()
-		consoleHelper.printColored("Goodbye!", bcolors.GREEN)
+		consoleHelper.printColored("Goodbye!", bcolors.GREEN)  

@@ -1,7 +1,10 @@
 import json
 import tornado.gen
 import tornado.web
+import requests
+import urllib.parse
 
+from constants import rankedStatuses
 from objects import beatmap
 from objects import scoreboard
 from common.constants import privileges
@@ -38,6 +41,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# GET parameters
 			md5 = self.get_argument("c")
+			osz2Hash = self.get_argument("h")
 			fileName = self.get_argument("f")
 			beatmapSetID = self.get_argument("i")
 			gameMode = self.get_argument("m")
@@ -45,6 +49,7 @@ class handler(requestsManager.asyncRequestHandler):
 			password = self.get_argument("ha")
 			scoreboardType = int(self.get_argument("v"))
 			scoreboardVersion = int(self.get_argument("vv"))
+			modsInt = int(self.get_argument("mods"))
 
 			# Login and ban check
 			userID = userUtils.getID(username)
@@ -74,7 +79,7 @@ class handler(requestsManager.asyncRequestHandler):
 				country = True
 			elif scoreboardType == 2:
 				# Mods leaderboard, replace mods (-1, every mod) with "mods" GET parameters
-				modsFilter = int(self.get_argument("mods"))
+				modsFilter = modsInt
 
 				# Disable automod (pp sort) if we are not donors
 				if not isDonor:
@@ -92,7 +97,6 @@ class handler(requestsManager.asyncRequestHandler):
 			# Create leaderboard object, link it to bmap and get all scores
 			sboard = scoreboard.scoreboard(username, gameMode, bmap, setScores=True, country=country, mods=modsFilter, friends=friends)
 
-			# Data to return
 			data = ""
 			data += bmap.getData(sboard.totalScores, scoreboardVersion)
 			data += sboard.getScoresData()

@@ -189,7 +189,6 @@ class oppai:
 					self.pp = float(output[len(output)-2][:l])
 
 			# Debug output
-			if glob.debug:
-				consoleHelper.printRippoppaiMessage("Calculated pp: {}".format(self.pp))
+			consoleHelper.printRippoppaiMessage("Calculated pp: {}".format(self.pp))
 		finally:
 			return self.pp

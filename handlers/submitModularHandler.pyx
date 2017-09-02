@@ -9,6 +9,8 @@ import requests
 import tornado.gen
 import tornado.web
 
+
+from common.constants import mods
 from objects import beatmap
 from objects import score
 from objects import scoreboard
@@ -105,7 +107,7 @@ class handler(requestsManager.asyncRequestHandler):
 			# Create score object and set its data
 			log.info("{} has submitted a score on {}...".format(username, scoreData[0]))
 			s = score.score()
-			
+			oldStats = userUtils.getUserStats(userID, s.gameMode)
 			s.setDataFromScoreData(scoreData)
 			if s.score < 10000:
 				return
@@ -124,7 +126,7 @@ class handler(requestsManager.asyncRequestHandler):
 				s.calculatePP()
 
 			# Restrict obvious cheaters
-			if (s.pp >= 700 and s.gameMode == gameModes.STD) and restricted == False:
+			if (s.pp >= 700 and s.gameMode == gameModes.STD and (s.mods & mods.RELAX < 1 and s.mods & mods.RELAX2 < 1) ) and restricted == False:
 				userUtils.restrict(userID)
 				restricted = True
 				userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
@@ -173,7 +175,7 @@ class handler(requestsManager.asyncRequestHandler):
 					processList = aeshelper.decryptRinjdael(aeskey, iv, plEnc, True).split("\n")
 					blackList = glob.db.fetchAll("SELECT * FROM blacklist")
 					for process in processList:
-						procHash = process.split(" | ")[0].split(" ")
+						procHash = process.split(" | ")[0].split(" ",1)
 						if len(procHash[0]) > 10:
 							for black in blackList:
 								if procHash[0] == black["hash"]:
@@ -324,9 +326,10 @@ class handler(requestsManager.asyncRequestHandler):
 				log.debug(msg)
 				s.calculateAccuracy()
 				# scores vk bot
-				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250 and s.gameMode == 0:
+				userStats = userUtils.getUserStats(userID, s.gameMode)
+				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250 and s.gameMode == 0:					
 					glob.redis.publish("scores:new_score", json.dumps({
-					"user":{"username":username, "userID": userID},
+					"user":{"username":username, "userID": userID, "rank":userStats["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":userStats["accuracy"], "oldpp":oldStats["pp"],"pp":userStats["pp"]},
 					"score":{"scoreID": s.scoreID, "mods":s.mods, "accuracy":s.accuracy, "missess":s.cMiss, "combo":s.maxCombo, "pp":s.pp, "rank":newScoreboard.personalBestRank},
 					"beatmap":{"beatmapID": beatmapInfo.beatmapID, "beatmapSetID": beatmapInfo.beatmapSetID, "max_combo":beatmapInfo.maxCombo, "song_name":beatmapInfo.songName}
 					}))
@@ -340,7 +343,9 @@ class handler(requestsManager.asyncRequestHandler):
 					"mods": s.mods,
 					"beatmapID": beatmapInfo.beatmapID,
 					"beatmapSetID": beatmapInfo.beatmapSetID,
-					"pp":s.pp
+					"pp":s.pp,
+					"rawoldpp":oldStats["pp"],
+					"rawpp":userStats["pp"]
 					}))
 				# send message to #announce if we're rank #1
 				if newScoreboard.personalBestRank < 51 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:

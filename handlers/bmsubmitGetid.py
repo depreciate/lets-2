@@ -101,7 +101,5 @@ def check_remaining_uploadcap(userID):
 	return mapAllowance - unrankedCount
 
 def create_beatmapset(userID, username):
-	beatmapSetId = int(glob.db.execute("INSERT INTO gatari_beatmapsets (user_id, creator, ranked, active, submit_date, latest_update) VALUES (%s, %s, 0, -1, %s, %s)",[userID, username, int(time.time()), int(time.time())]))
-	glob.db.execute("")
-	return beatmapSetId
+	return int(glob.db.execute("INSERT INTO gatari_beatmapsets (user_id, creator, ranked, active, submit_date, latest_update) VALUES (%s, %s, 0, -1, %s, %s)",[userID, username, int(time.time()), int(time.time())]))
 	

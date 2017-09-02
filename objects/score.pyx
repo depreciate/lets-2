@@ -8,8 +8,8 @@ from constants import rankedStatuses
 from common.ripple import scoreUtils
 from objects import glob
 from pp import rippoppai
+from pp import omppcPy
 from pp import wifipiano2
-
 
 class score:
 	def __init__(self, scoreID = None, rank = None, setData = True):
@@ -49,7 +49,6 @@ class score:
 
 		self.oldPersonalBest = 0
 		self.rankedScoreIncrease = 0
-
 		if scoreID is not None and setData == True:
 			self.setDataFromDB(scoreID, rank)
 
@@ -291,7 +290,7 @@ class score:
 				fo = rippoppai.oppai(b, self)
 				self.pp = fo.pp
 			elif self.gameMode == gameModes.MANIA:
-				xeno = wifipiano2.piano(b, self)
+				xeno = omppcPy.piano(b, self)
 				self.pp = xeno.pp
 		else:
 			self.pp = 0.0

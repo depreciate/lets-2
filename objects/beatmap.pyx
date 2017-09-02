@@ -70,19 +70,30 @@ class beatmap:
 			log.debug("Deleting old beatmap data ({})".format(bdata["id"]))
 		
 			#glob.db.execute("DELETE FROM beatmaps WHERE id = %s LIMIT 1", [bdata["id"]])
-			if frozen == 0 and self.rankedStatus > 1:
+			if frozen == 0 and self.rankedStatus > 2:
+				if(self.rankedStatus == 2 and bdata["ranked"] == 4):
+					log.warning("rankedstatus 2 bdata = 4 {}".format(self.fileMD5))
+					glob.db.execute("DELETE FROM scores WHERE beatmap_md5 = %s",[self.fileMD5] )
 				glob.db.execute("UPDATE `beatmaps` SET   `ranking_data` = %s WHERE beatmap_id = %s ", [
 				self.rankingDate if self.rankedStatus > 0 else 0,
 				self.beatmapID
 				])
 
-			glob.db.execute("UPDATE `beatmaps` SET  `latest_update` = %s, `artist` = %s,`title` = %s,`version` = %s, `creator` = %s ,`ranked_status_freezed` = %s WHERE beatmap_id = %s ", [
+			glob.db.execute("UPDATE `beatmaps` SET  `latest_update` = %s, `artist` = %s,`title` = %s,`version` = %s, `creator` = %s ,`ranked_status_freezed` = %s, `ranked` = %s, `hp` = %s,`cs` = %s , `difficulty_std` = %s, `difficulty_taiko` = %s, `difficulty_ctb` = %s, `difficulty_mania` = %s, `max_combo` = %s  WHERE beatmap_id = %s ", [
 			int(time.time()),
 			self.artist.encode("utf-8", "ignore").decode("utf-8"),
 			self.title.encode("utf-8", "ignore").decode("utf-8"),
 			self.version.encode("utf-8", "ignore").decode("utf-8"),
 			self.creator.encode("utf-8", "ignore").decode("utf-8"),
 			frozen,
+			self.rankedStatus,
+			self.HP,
+			self.CS,
+			self.starsStd,
+			self.starsTaiko,
+			self.starsCtb,
+			self.starsMania,
+			self.maxCombo,
 			self.beatmapID
 			])
 		
@@ -135,7 +146,7 @@ class beatmap:
 
 		# Make sure the query returned something
 		if data is None:
-			log.error("not found "+md5)
+			log.warning("not found "+md5)
 			return False
 
 		# Make sure the beatmap is not an old one
@@ -149,7 +160,8 @@ class beatmap:
 		# If the beatmap is ranked, we don't need to refresh data from osu!api that often
 		if data["ranked"] >= rankedStatuses.RANKED and data["ranked_status_freezed"] == 0:
 			expire *= 3
-
+		if data["ranked"] == rankedStatuses.QUALIFIED:
+			expire /= 3 
 		# Make sure the beatmap data in db is not too old
 		if int(expire) > 0 and time.time() > data["latest_update"]+int(expire):
 			if data["ranked_status_freezed"] > 0:
@@ -251,14 +263,11 @@ class beatmap:
 				mainData = dataCtb
 			elif dataMania is not None:
 				mainData = dataMania
-			try:
-				resp = requests.get("http://osu.ppy.sh/osu/{}".format(mainData["beatmap_id"]), timeout=5).text
-				self.rankedStatus = rankedStatuses.NEED_UPDATE
-				return False
-			except Exception: 
-				self.rankedStatus = rankedStatuses.NOT_SUBMITTED
-				return False
-				pass
+			
+			self.rankedStatus = rankedStatuses.NOT_SUBMITTED
+			return False
+				
+				
 
 		log.debug("Got beatmap data from osu!api")
 		self.songName = "{} - {} [{}]".format(mainData["artist"], mainData["title"], mainData["version"])
