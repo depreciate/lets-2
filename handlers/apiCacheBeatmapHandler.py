@@ -1,10 +1,6 @@
 import json
-import sys
-import traceback
-
 import tornado.gen
 import tornado.web
-from raven.contrib.tornado import SentryMixin
 
 from objects import beatmap
 from common.log import logUtils as log

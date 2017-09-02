@@ -1,5 +1,4 @@
 import os
-import subprocess
 from pp import omppc
 
 from common import generalUtils
@@ -8,9 +7,6 @@ from common.ripple import scoreUtils
 from constants import exceptions
 from helpers import consoleHelper
 from helpers import osuapiHelper
-from objects import glob
-from common.log import logUtils as log
-
 
 # constants
 MODULE_NAME = "omppcPy"

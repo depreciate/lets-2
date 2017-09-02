@@ -22,9 +22,9 @@ def printServerStartHeader(asciiArt):
 		printColored("|____||___|  |_|  |___/  \n", bcolors.GREEN)
 
 
-	printColored("> Yee Xd".format(glob.VERSION), bcolors.GREEN)
-	printColored("> Made by the Ripple team", bcolors.GREEN)
-	printColored("> {}https://git.zxq.co/ripple/lets".format(bcolors.UNDERLINE), bcolors.GREEN)
+	printColored("> Yee Xd", bcolors.GREEN)
+	printColored("> Made by the Ripple team 2016-2017. Gatari team 2017", bcolors.GREEN)
+	printColored("> {}https://github.com/xxdstem/lets".format(bcolors.UNDERLINE), bcolors.GREEN)
 	printColored("> Press CTRL+C to exit\n", bcolors.GREEN)
 
 

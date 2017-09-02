@@ -3,8 +3,6 @@ import threading
 import json
 
 from objects import glob
-from common.log import logUtils as log
-from helpers import osuapiHelper
 from objects import beatmap
 from constants import rankedStatuses
 
