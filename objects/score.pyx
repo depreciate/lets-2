@@ -212,6 +212,7 @@ class score:
 
 			# No duplicates found.
 			# Get right "completed" value
+			scoreBest = glob.db.fetch("SELECT id, score, mods, pp, completed FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed > 2 ORDER by score desc LIMIT 1", [userID, self.fileMd5, self.gameMode])
 			personalBest = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1", [userID, self.fileMd5, self.gameMode])
 			if personalBest is None:
 				# This is our first score on this map, so it's our best score
@@ -219,45 +220,51 @@ class score:
 				self.rankedScoreIncrease = self.score
 				self.oldPersonalBest = 0
 			else:
-				if self.gameMode == gameModes.STD or self.gameMode == gameModes.MANIA:
-					self.calculatePP()
+				if self.gameMode == gameModes.STD or self.gameMode == gameModes.MANIA or self.gameMode == gameModes.TAIKO:
+					b = beatmap.beatmap(self.fileMd5, 0)
+					self.calculatePP(b=b)
 
 				withThisMods = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed>= 3 AND mods = %s ORDER BY pp DESC LIMIT 1", [userID, self.fileMd5, self.gameMode, self.mods])
 				ok_sub = False
-				if self.gameMode == gameModes.STD:
-					#New peppy feature pp > score
-					if((self.mods != personalBest["mods"]) or (self.mods & 536870912 > 0)) :
-						if(self.pp > personalBest["pp"]):
-							self.completed = 3
-							self.rankedScoreIncrease = self.score-personalBest["score"]
-							self.oldPersonalBest = 0
-							glob.db.execute("UPDATE scores SET completed = 4 WHERE id = %s",[personalBest["id"]])
-							ok_sub = True
-						else:
-							if withThisMods is None:
-								self.completed = 4
-								self.rankedScoreIncrease=self.score
-								self.oldPersonalBest = 0
-							else:
-								if(self.pp > withThisMods["pp"]):
-									self.completed = 4
-									self.rankedScoreIncrease=self.score
-									self.oldPersonalBest = withThisMods["id"]
-									ok_sub = True
-						
-				# Compare personal best's score with current score
-				if(ok_sub == False):
-					if self.score > personalBest["score"]:
-						# New best score
+				if self.gameMode == gameModes.STD and b.rankedStatus != rankedStatuses.LOVED:
+					if self.pp > personalBest["pp"] or (self.pp == personalBest["pp"] and self.score > personalBest["score"]):
 						self.completed = 3
-						self.rankedScoreIncrease = self.score-personalBest["score"]
+						self.rankedScoreIncrease = self.score - personalBest["score"]
 						self.oldPersonalBest = personalBest["id"]
 						ok_sub = True
 					else:
-						if(self.completed != 4):
-							self.completed = 2
-							self.rankedScoreIncrease = 0
-							self.oldPersonalBest = 0
+						self.completed = 2
+						if withThisMods is not None:
+							if self.score > withThisMods["score"]:
+								self.rankedScoreIncrease = self.score - withThisMods["score"]
+								self.oldPersonalBest = 0
+								if(withThisMods["id"] != personalBest["id"]):
+									self.oldPersonalBest = withThisMods["id"]
+								self.completed = 4
+						else:
+							if(self.score > scoreBest["score"]):
+								self.completed = 4
+								self.rankedScoreIncrease = 0 
+								self.oldPersonalBest = 0 
+								if(scoreBest["pp"] < self.pp):
+									self.oldPersonalBest = scoreBest["id"]
+							else:
+								self.completed = 2
+								self.rankedScoreIncrease = 0 
+								self.oldPersonalBest = 0
+				else:		
+					if (self.score > personalBest["score"]):
+						self.completed = 3
+						self.rankedScoreIncrease = self.score - personalBest["score"]
+						self.oldPersonalBest = personalBest["id"]
+						ok_sub = True
+						
+				# Compare personal best's score with current score
+				if(ok_sub == False):
+					if(self.completed != 4):
+						self.completed = 2
+						self.rankedScoreIncrease = 0
+						self.oldPersonalBest = 0
 
 				 
 		log.debug("Completed status: {}".format(self.completed))
@@ -286,7 +293,7 @@ class score:
 
 		# Create an instance of the magic pp calculator and calculate pp
 		if self.passed == True and b.rankedStatus != rankedStatuses.LOVED:
-			if self.gameMode == gameModes.STD:
+			if self.gameMode == gameModes.STD or self.gameMode == gameModes.TAIKO:
 				fo = rippoppai.oppai(b, self)
 				self.pp = fo.pp
 			elif self.gameMode == gameModes.MANIA:

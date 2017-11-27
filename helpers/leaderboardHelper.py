@@ -87,3 +87,53 @@ def update(userID, newScore, gameMode):
 
 	# Finally, insert the user back.
 	glob.db.execute("INSERT INTO leaderboard_{} (position, user, v) VALUES (%s, %s, %s);".format(mode), [newT, userID, newScore])
+	if gameMode == 0:
+		newPlayer = False
+		us = glob.db.fetch("SELECT * FROM users_peak_rank WHERE userid = %s LIMIT 1", [userID])
+		if us is None:
+			newPlayer = True
+		if newPlayer:
+			glob.db.execute("INSERT INTO users_peak_rank (userid, peak_rank) VALUES (%s, %s);", [userID, newT])
+		else:
+			if us["peak_rank"] > newT:
+				glob.db.execute("UPDATE users_peak_rank SET peak_rank = %s WHERE userid = %s", [newT,userID]) 
+	
+def updateClans(clanID, newScore):
+	"""
+	Update gamemode's leaderboard the leaderboard
+
+	userID --
+	newScore -- new score or pp
+	gameMode -- gameMode number
+	"""
+	log.debug("Updating clan leaderboard...")
+
+	newPlayer = False
+	us = glob.db.fetch("SELECT * FROM leaderboard_clans WHERE clan = %s LIMIT 1",[clanID])
+	if us is None:
+		newPlayer = True
+	# Find a clan who is right below our score
+	target = glob.db.fetch("SELECT * FROM leaderboard_clans WHERE v <= %s ORDER BY position ASC LIMIT 1", [newScore])
+	plus = 0
+	if target is None:
+		# Wow, this user completely sucks at this game.
+		target = glob.db.fetch("SELECT * FROM leaderboard_clans ORDER BY position DESC LIMIT 1")
+		plus = 1
+
+	# Set newT
+	if target is None:
+		# Okay, nevermind. It's not this user to suck. It's just that no-one has ever entered the leaderboard thus far.
+		# So, the player is now #1. Yay!
+		newT = 1
+	else:
+		# Otherwise, just give them the position of the target.
+		newT = target["position"] + plus
+	# Make some place for the new "place holder".
+	if newPlayer:
+		glob.db.execute("UPDATE leaderboard_clans SET position = position + 1 WHERE position >= %s ORDER BY position DESC", [newT])
+	else:
+		glob.db.execute("DELETE FROM leaderboard_clans WHERE clan = %s", [clanID])
+		glob.db.execute("UPDATE leaderboard_clans SET position = position + 1 WHERE position < %s AND position >= %s ORDER BY position DESC", [us["position"], newT])
+
+	# Finally, insert the user back.
+	glob.db.execute("INSERT INTO leaderboard_clans (position, clan, v) VALUES (%s, %s, %s);", [newT, clanID, newScore])

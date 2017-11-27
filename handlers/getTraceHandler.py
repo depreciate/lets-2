@@ -6,14 +6,16 @@ import tornado.gen
 import tornado.web
 from raven.contrib.tornado import SentryMixin
 
+from common.constants import privileges
 from common.log import logUtils as log
 from common.ripple import userUtils
 from common.web import requestsManager
 from constants import exceptions
+from common import generalUtils
 from objects import glob
 from common.sentry import sentry
 
-MODULE_NAME = "get_replay"
+MODULE_NAME = "get_trace"
 class handler(requestsManager.asyncRequestHandler):
 	"""
 	Handler for osu-getreplay.php
@@ -27,36 +29,32 @@ class handler(requestsManager.asyncRequestHandler):
 			ip = self.getRequestIP()
 
 			# Check arguments
-			if not requestsManager.checkArguments(self.request.arguments, ["c", "u", "h"]):
+			if not requestsManager.checkArguments(self.request.arguments, ["c", "k"]):
 				raise exceptions.invalidArgumentsException(MODULE_NAME)
 
 			# Get arguments
-			username = self.get_argument("u")
-			password = self.get_argument("h")
-			replayID = self.get_argument("c")
+			key = self.get_argument("k")
+			targetID = self.get_argument("c")
 
-			# Login check
-			userID = userUtils.getID(username)
-			if userID == 0:
-				username = ""
+			if key is None or key != generalUtils.stringMd5(glob.conf.config["server"]["apikey"]):
+				raise exceptions.invalidArgumentsException(MODULE_NAME)
 
-			# Get user ID
-			replayData = glob.db.fetch("SELECT scores.*, users.username AS uname FROM scores LEFT JOIN users ON scores.userid = users.id WHERE scores.id = %s", [replayID])
-
-			# Increment 'replays watched by others' if needed
-			if replayData is not None:
-				if username != replayData["uname"] and username != "":
-					userUtils.incrementReplaysWatched(replayID, replayData["userid"], replayData["play_mode"])
+			targetUsername = userUtils.getUsername(targetID)
+			if(targetUsername is None):
+				raise exceptions.invalidArgumentsException(MODULE_NAME)
 
 			# Serve replay
-			log.info("Serving replay_{}.osr".format(replayID))
-			fileName = ".data/replays/replay_{}.osr".format(replayID)
+			log.info("Serving {}.txt".format(targetUsername))
+			fileName = ".data/pl/{}.txt".format(targetUsername)
 			if os.path.isfile(fileName):
 				with open(fileName, "rb") as f:
 					fileContent = f.read()
 				self.write(fileContent)
+				self.set_header("Content-length", len(fileContent))
+				self.set_header("Content-Description", "File Transfer")
+				self.set_header("Content-Disposition", "attachment; filename=\"{}_trace.txt\"".format(targetUsername))
 			else:
-				log.warning("Replay {} doesn't exist".format(replayID))
+				log.warning("Trace {} doesn't exist".format(targetUsername))
 				self.write("")
 		except exceptions.invalidArgumentsException:
 			pass

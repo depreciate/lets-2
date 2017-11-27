@@ -1,6 +1,7 @@
 import time
 import requests
 import datetime
+import re
 
 from common.log import logUtils as log
 from constants import rankedStatuses
@@ -9,7 +10,7 @@ from objects import glob
 
 
 class beatmap:
-	def __init__(self, md5 = None, beatmapSetID = None, gameMode = 0, refresh=False):
+	def __init__(self, md5 = None, beatmapSetID = None, gameMode = 0, refresh=False, fileName=""):
 		"""
 		Initialize a beatmap object.
 
@@ -48,6 +49,13 @@ class beatmap:
 
 		# Force refresh from osu api
 		self.refresh = refresh
+
+		if (fileName != ""):
+			regex = r".* \[(.*)\]"
+			prog = re.compile(regex)
+			result = prog.match(fileName)
+			if result is not None:
+				self.version = result.group(1)
 
 		if md5 is not None and beatmapSetID is not None:
 			self.setData(md5, beatmapSetID)
@@ -99,7 +107,7 @@ class beatmap:
 		
 		else:
 			# Unfreeze beatmap status
-			log.warning("karti net d db md5={},id={} rank={}".format(self.fileMD5, self.beatmapID,self.rankedStatus))
+			log.warning("karti net v db md5={},id={} rank={}".format(self.fileMD5, self.beatmapID,self.rankedStatus))
 			#glob.db.execute("DELETE FROM beatmaps WHERE beatmap_id = %s ",[self.beatmapID])
 			frozen = 0
 			try:
@@ -158,8 +166,8 @@ class beatmap:
 		expire = int(glob.conf.config["server"]["beatmapcacheexpire"])
 
 		# If the beatmap is ranked, we don't need to refresh data from osu!api that often
-		if data["ranked"] >= rankedStatuses.RANKED and data["ranked_status_freezed"] == 0:
-			expire *= 3
+		if data["ranked"] >= rankedStatuses.RANKED and data["ranked"] < rankedStatuses.QUALIFIED and data["ranked_status_freezed"] == 0:
+			expire = 0
 		if data["ranked"] == rankedStatuses.QUALIFIED:
 			expire /= 3 
 		# Make sure the beatmap data in db is not too old
@@ -223,7 +231,7 @@ class beatmap:
 		dataStd = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m=0".format(md5))
 		dataTaiko = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m=1".format(md5))
 		dataCtb = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m=2".format(md5))
-		dataMania = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m=3".format(md5))
+		dataMania = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m=3".format(md5))		
 		if dataStd is not None:
 			mainData = dataStd
 		elif dataTaiko is not None:
@@ -251,21 +259,15 @@ class beatmap:
 			glob.db.execute("DELETE FROM beatmaps WHERE beatmap_md5 = %s ",[md5])
 			self.fileMD5 = None
 			log.debug("osu!api data is None")
-			dataStd = osuapiHelper.osuApiRequest("get_beatmaps", "s={}&a=1&m=0".format(beatmapSetID))
-			dataTaiko = osuapiHelper.osuApiRequest("get_beatmaps", "s={}&a=1&m=1".format(beatmapSetID))
-			dataCtb = osuapiHelper.osuApiRequest("get_beatmaps", "s={}&a=1&m=2".format(beatmapSetID))
-			dataMania = osuapiHelper.osuApiRequest("get_beatmaps", "s={}&a=1&m=3".format(beatmapSetID))
-			if dataStd is not None:
-				mainData = dataStd
-			elif dataTaiko is not None:
-				mainData = dataTaiko
-			elif dataCtb is not None:
-				mainData = dataCtb
-			elif dataMania is not None:
-				mainData = dataMania
-			
-			self.rankedStatus = rankedStatuses.NOT_SUBMITTED
+			mainData = osuapiHelper.osuApiRequest("get_beatmaps", "s={}".format(beatmapSetID), False)
+			if mainData is not None:
+				self.rankedStatus = rankedStatuses.NOT_SUBMITTED			
+				for beatmap in mainData:
+					if (beatmap["version"] == self.version):
+						self.rankedStatus = rankedStatuses.NEED_UPDATE
+						break
 			return False
+			
 				
 				
 

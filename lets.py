@@ -26,6 +26,7 @@ from handlers import downloadMapHandler
 from handlers import emptyHandler
 from handlers import getFullReplayHandler
 from handlers import getReplayHandler
+from handlers import getTraceHandler
 from handlers import getScoresHandler
 from handlers import getScreenshotHandler
 from handlers import loadTestHandler
@@ -52,6 +53,7 @@ def make_app():
 		(r"/web/osu-osz2-getscores.php", getScoresHandler.handler),
 		(r"/web/osu-submit-modular.php", submitModularHandler.handler),
 		(r"/web/osu-getreplay.php", getReplayHandler.handler),
+		(r"/web/osu-gettrace.php", getTraceHandler.handler),
 		(r"/web/osu-screenshot.php", uploadScreenshotHandler.handler),
 		(r"/web/osu-search.php", osuSearchHandler.handler),
 		(r"/web/osu-search-set.php", osuSearchSetHandler.handler),
@@ -227,7 +229,7 @@ if __name__ == "__main__":
 		pubSub.listener(glob.redis, {
 			"lets:beatmap_updates": beatmapUpdateHandler.handler(),
 		}).start()
-		bu.BeatmapUpdater(time=25)
+		bu.BeatmapUpdater(time=20)
 		# Start Tornado
 		http_server = tornado.httpserver.HTTPServer(glob.application)
 		http_server.listen(serverPort)

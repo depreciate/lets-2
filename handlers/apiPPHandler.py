@@ -1,8 +1,11 @@
 import json
+import sys
+import traceback
 import math
 
 import tornado.gen
 import tornado.web
+from raven.contrib.tornado import SentryMixin
 
 from objects import beatmap
 from common.constants import gameModes
@@ -139,7 +142,7 @@ class handler(requestsManager.asyncRequestHandler):
 					# Specific accuracy, calculate
 					# Create oppai instance
 					log.debug("Specific request ({}%/{}). Calculating pp with oppai...".format(accuracy, modsEnum))
-					oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=True, stars=True)
+					oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=False, stars=True)
 					bmap.starsStd = oppai.stars
 					if accuracy > 0:
 						oppai.acc = accuracy

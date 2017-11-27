@@ -81,7 +81,7 @@ def prepareTillerinoAll():
     for user in users:
        prepareTillerinoList(user,maps_info, dist_matrix)
 
-def player2player_distance(self,player1plays,player2plays, maps_info):
+def player2player_distance(player1plays,player2plays, maps_info):
 
     D = 0.5
 
@@ -95,8 +95,8 @@ def player2player_distance(self,player1plays,player2plays, maps_info):
     perf_distance = 0.0
     for index, row in p12.iterrows():
         #print(row)
-        perf1 = self.player2map_performance(row['max_combo_x'],row['max_combo'],row['misses_count_x'],row['accuracy_x'])
-        perf2 = self.player2map_performance(row['max_combo_y'],row['max_combo'],row['misses_count_y'],row['accuracy_y'])
+        perf1 = player2map_performance(row['max_combo_x'],row['max_combo'],row['misses_count_x'],row['accuracy_x'])
+        perf2 = player2map_performance(row['max_combo_y'],row['max_combo'],row['misses_count_y'],row['accuracy_y'])
         perf_distance += abs(perf1 - perf2)
     if (len(p12) > 0):
         perf_distance /= len(p12)

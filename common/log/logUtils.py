@@ -88,7 +88,7 @@ def error(message, discord = None, alertDev = True):
 						Default: False
 	:return:
 	"""
-	logMessage(message, "ERROR", bcolors.RED, discord, alertDev)
+	logMessage(message, "ERROR", bcolors.RED, discord, alertDev, of = "errors.txt")
 
 def info(message, discord = None, alertDev = False):
 	"""

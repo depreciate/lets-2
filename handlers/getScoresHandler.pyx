@@ -53,9 +53,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Login and ban check
 			userID = userUtils.getID(username)
-			if userID == 0:
-				raise exceptions.loginFailedException(MODULE_NAME, userID)
-			if not userUtils.checkLogin(userID, password, ip):
+			if not userUtils.checkLogin(userID, password, ip) and userID != 0:
 				raise exceptions.loginFailedException(MODULE_NAME, username)
 			if userUtils.check2FA(userID, ip):
 				raise exceptions.need2FAException(MODULE_NAME, username, ip)
@@ -92,7 +90,7 @@ class handler(requestsManager.asyncRequestHandler):
 			fileNameShort = fileName[:32]+"..." if len(fileName) > 32 else fileName[:-4]
 
 			# Create beatmap object and set its data
-			bmap = beatmap.beatmap(md5, beatmapSetID, gameMode)
+			bmap = beatmap.beatmap(md5, beatmapSetID, gameMode, fileName = fileName)
 
 			# Create leaderboard object, link it to bmap and get all scores
 			sboard = scoreboard.scoreboard(username, gameMode, bmap, setScores=True, country=country, mods=modsFilter, friends=friends)

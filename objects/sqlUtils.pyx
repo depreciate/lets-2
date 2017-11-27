@@ -11,4 +11,4 @@ def wrapArrayForSelect(els):
 
 def connectToDB(connections):
 	readConfig = config.config("config.ini")
-	return dbConnector.db(readConfig.config["db"]["host"], readConfig.config["db"]["username"], readConfig.config["db"]["password"], readConfig.config["db"]["database"], int(readConfig.config["db"]["workers"]))
+	return dbConnector.db(readConfig.config["db"]["host"], readConfig.config["db"]["username"], readConfig.config["db"]["password"], readConfig.config["db"]["database"], 2)

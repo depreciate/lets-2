@@ -3,15 +3,12 @@ import json
 import os
 import sys
 import traceback
-import threading
 from urllib.parse import urlencode
 
 import requests
 import tornado.gen
 import tornado.web
 
-from common import generalUtils
-from common.constants import mods
 from objects import beatmap
 from objects import score
 from objects import scoreboard
@@ -80,8 +77,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Login and ban check
 			userID = userUtils.getID(username)
-			if "c1" in self.request.arguments:
-				glob.db.execute("INSERT INTO private (userid, c1) VALUES (%s, %s)",[userID, self.get_argument("c1")])
+			glob.db.execute("INSERT INTO private (userid, c1) VALUES (%s, %s)",[userID, self.get_argument("c1")])
 			
 			# User exists check
 			if userID == 0:
@@ -109,7 +105,7 @@ class handler(requestsManager.asyncRequestHandler):
 			# Create score object and set its data
 			log.info("{} has submitted a score on {}...".format(username, scoreData[0]))
 			s = score.score()
-			oldStats = userUtils.getUserStats(userID, s.gameMode)
+			
 			s.setDataFromScoreData(scoreData)
 			if s.score < 10000:
 				return
@@ -124,11 +120,11 @@ class handler(requestsManager.asyncRequestHandler):
 				return
 			# Calculate PP
 			# NOTE: PP are std and mania only
-			if s.gameMode == gameModes.STD or s.gameMode == gameModes.MANIA or s.gameMode == gameModes.TAIKO and s.completed > 0:
+			if s.gameMode == gameModes.STD or s.gameMode == gameModes.MANIA and s.completed > 0:
 				s.calculatePP()
 
 			# Restrict obvious cheaters
-			if (s.pp >= 900 and s.gameMode == gameModes.STD and (s.mods & mods.RELAX < 1 and s.mods & mods.RELAX2 < 1) ) and restricted == False:
+			if (s.pp >= 700 and s.gameMode == gameModes.STD) and restricted == False:
 				userUtils.restrict(userID)
 				restricted = True
 				userUtils.appendNotes(userID, "Restricted due to too high pp gain ({}pp)".format(s.pp))
@@ -163,24 +159,6 @@ class handler(requestsManager.asyncRequestHandler):
 				log.warning("**{}** ({}) has been restricted due clientside anti cheat flag **({})**".format(username, userID, haxFlags), "cm")'''
 
 			# Make sure process list has been passed
-
-			if s.score < 0 or s.score > (2 ** 63) - 1:
-				userUtils.ban(userID)
-				userUtils.appendNotes(userID, "Banned due to negative score (score submitter)")
-
-			# Make sure the score is not memed
-			if s.gameMode == gameModes.MANIA and s.score > 1000000:
-				userUtils.ban(userID)
-				userUtils.appendNotes(userID, "Banned due to mania score > 1000000 (score submitter)")
-
-			# Ci metto la faccia, ci metto la testa e ci metto il mio cuore
-			if ((s.mods & mods.DOUBLETIME) > 0 and (s.mods & mods.HALFTIME) > 0) \
-					or ((s.mods & mods.HARDROCK) > 0 and (s.mods & mods.EASY) > 0)\
-					or ((s.mods & mods.SUDDENDEATH) > 0 and (s.mods & mods.NOFAIL) > 0):
-				userUtils.ban(userID)
-				userUtils.appendNotes(userID, "Impossible mod combination {} (score submitter)".format(s.mods))
-				log.warning("**{}** ({}) has been restricted due to impossible mod combination {} (score submitter)".format(username, userID,s.mods), "cm")
-
 			if s.completed == 3 and "pl" not in self.request.arguments and restricted == False:
 				userUtils.restrict(userID)
 				userUtils.appendNotes(userID, "Restricted due to missing process list while submitting a score (most likely he used a score submitter)")
@@ -194,20 +172,13 @@ class handler(requestsManager.asyncRequestHandler):
 					plEnc = self.get_argument("pl")
 					processList = aeshelper.decryptRinjdael(aeskey, iv, plEnc, True).split("\n")
 					blackList = glob.db.fetchAll("SELECT * FROM blacklist")
-					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
-					if(allo == 0):
-						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
-						of = "{}.txt".format(username)
-						glob.fileBuffers.write(".data/pl/"+of, '[{}]'.format(generalUtils.getTimestamp())+''.join(processList)+ENDL)
-
 					for process in processList:
-						procHash = process.split(" | ")[0].split(" ",1)
+						procHash = process.split(" | ")[0].split(" ")
 						if len(procHash[0]) > 10:
 							for black in blackList:
 								if procHash[0] == black["hash"]:
 									log.warning("{} ({}) blacklisted proccess has been found on process list ({}) path: {}".format(username,userID,black["name"], procHash[1]),"cm")
-				except: 
-					log.error("{}{}".format(sys.exc_info(), traceback.format_exc()))
+				except Exception: 
 					pass
 
 			if s.passed == True and s.completed == 3:
@@ -259,13 +230,13 @@ class handler(requestsManager.asyncRequestHandler):
 				glob.userStatsCache.update(userID, s.gameMode, newUserData)
 
 				# Use pp/score as "total" based on game mode
-				if s.gameMode == gameModes.STD or s.gameMode == gameModes.MANIA or s.gameMode == gameModes.TAIKO:
+				if s.gameMode == gameModes.STD or s.gameMode == gameModes.MANIA:
 					criteria = "pp"
 				else:
 					criteria = "rankedScore"
 
 				# Update leaderboard if score/pp has changed
-				if s.completed == 3:
+				if s.completed == 3 and newUserData[criteria] != oldUserData[criteria]:
 					leaderboardHelper.update(userID, newUserData[criteria], s.gameMode)
 
 			# TODO: Update total hits and max combo
@@ -353,11 +324,10 @@ class handler(requestsManager.asyncRequestHandler):
 				log.debug(msg)
 				s.calculateAccuracy()
 				# scores vk bot
-				userStats = userUtils.getUserStats(userID, s.gameMode)
-				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250 and (s.gameMode == 0 or s.gameMode == 3) :					
+				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250 and s.gameMode == 0:
+					userStats = userUtils.getUserStats(userID, s.gameMode)
 					glob.redis.publish("scores:new_score", json.dumps({
-					"gm":s.gameMode,
-					"user":{"username":username, "userID": userID, "rank":userStats["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":userStats["accuracy"], "oldpp":oldStats["pp"],"pp":userStats["pp"]},
+					"user":{"username":username, "userID": userID, "rank":userStats["gameRank"], "pp":userStats["pp"]},
 					"score":{"scoreID": s.scoreID, "mods":s.mods, "accuracy":s.accuracy, "missess":s.cMiss, "combo":s.maxCombo, "pp":s.pp, "rank":newScoreboard.personalBestRank},
 					"beatmap":{"beatmapID": beatmapInfo.beatmapID, "beatmapSetID": beatmapInfo.beatmapSetID, "max_combo":beatmapInfo.maxCombo, "song_name":beatmapInfo.songName}
 					}))
@@ -371,24 +341,16 @@ class handler(requestsManager.asyncRequestHandler):
 					"mods": s.mods,
 					"beatmapID": beatmapInfo.beatmapID,
 					"beatmapSetID": beatmapInfo.beatmapSetID,
-					"pp":s.pp,
-					"rawoldpp":oldStats["pp"],
-					"rawpp":userStats["pp"]
+					"pp":s.pp
 					}))
 				# send message to #announce if we're rank #1
 				if newScoreboard.personalBestRank < 51 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:
 					userUtils.logUserLog("achieved #{} rank on ".format(newScoreboard.personalBestRank),s.fileMd5, userID, s.gameMode)
 					if newScoreboard.personalBestRank == 1:
-					
-						firstPlacesUpdateThread = threading.Thread(None,lambda : userUtils.recalcFirstPlaces(userID))
-						firstPlacesUpdateThread.start()
-					
 						annmsg = "[https://osu.gatari.pw/u/{} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})".format(userID, username, beatmapInfo.beatmapID, beatmapInfo.songName, gameModes.getGamemodeFull(s.gameMode))
 						params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
 						requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 						if (len(newScoreboard.scores) > 2):
-							firstPlacesUpdateThread = threading.Thread(None,lambda : userUtils.recalcFirstPlaces(newScoreboard.scores[2].playerUserID))
-							firstPlacesUpdateThread.start()
 							userUtils.logUserLog("has lost first place on ",s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode)	
 				# Write message to client
 				self.write(msg)

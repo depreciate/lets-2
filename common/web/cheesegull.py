@@ -4,6 +4,7 @@ import json
 from constants import exceptions
 from objects import glob
 from common.log import logUtils as log
+from objects import glob
 
 def cheesegullRequest(handler, requestType="GET", key="", params=None, mustHave=None, wants=None):
 	"""

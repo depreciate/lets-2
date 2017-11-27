@@ -43,6 +43,7 @@ class handler(requestsManager.asyncRequestHandler):
 			rank = generalUtils.getRank(int(scoreData["play_mode"]), int(scoreData["mods"]), int(scoreData["accuracy"]), int(scoreData["300_count"]), int(scoreData["100_count"]), int(scoreData["50_count"]), int(scoreData["misses_count"]))
 			magicHash = generalUtils.stringMd5("{}p{}o{}o{}t{}a{}r{}e{}y{}o{}u{}{}{}".format(int(scoreData["100_count"]) + int(scoreData["300_count"]), scoreData["50_count"], scoreData["gekis_count"], scoreData["katus_count"], scoreData["misses_count"], scoreData["beatmap_md5"], scoreData["max_combo"], "True" if int(scoreData["full_combo"]) == 1 else "False", scoreData["username"], scoreData["score"], rank, scoreData["mods"], "True"))
 			# Add headers (convert to full replay)
+			log.error(scoreData["time"])
 			fullReplay =  binaryHelper.binaryWrite([
 				[scoreData["play_mode"], dataTypes.byte],
 				[20150414, dataTypes.uInt32],
@@ -60,7 +61,7 @@ class handler(requestsManager.asyncRequestHandler):
 				[scoreData["full_combo"], dataTypes.byte],
 				[scoreData["mods"], dataTypes.uInt32],
 				[0, dataTypes.byte],
-				[0, dataTypes.uInt64],
+				[int((scoreData["time"]* 10000000) + 621355968000000000), dataTypes.uInt64],
 				[rawReplay, dataTypes.rawReplay],
 				[0, dataTypes.uInt32],
 				[0, dataTypes.uInt32],

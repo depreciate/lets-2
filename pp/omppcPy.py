@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pp import omppc
 
 from common import generalUtils
@@ -7,6 +8,9 @@ from common.ripple import scoreUtils
 from constants import exceptions
 from helpers import consoleHelper
 from helpers import osuapiHelper
+from objects import glob
+from common.log import logUtils as log
+from helpers import mapsHelper
 
 # constants
 MODULE_NAME = "omppcPy"
@@ -66,45 +70,9 @@ class piano:
 		self.pp = 0
 		try:
 			# Build .osu map file path
-			mapFile = "/oppai/maps/{map}".format(map=self.map)
+			mapFile = "/data/oppai/maps/{map}".format(map=self.map)
 
-			try:
-				# Check if we have to download the .osu file
-				download = False
-				if not os.path.isfile(mapFile):
-					# .osu file doesn't exist. We must download it
-					consoleHelper.printColored("[!] {} doesn't exist".format(mapFile), bcolors.YELLOW)
-					download = True
-				else:
-					# File exists, check md5
-					if generalUtils.fileMd5(mapFile) != self.beatmap.fileMD5:
-						# MD5 don't match, redownload .osu file
-						consoleHelper.printColored("[!] Beatmaps md5 don't match", bcolors.YELLOW)
-						download = True
-
-				# Download .osu file if needed
-				if download:
-					consoleHelper.printRippoppaiMessage("Downloading {} from osu! servers...".format(self.beatmap.beatmapID))
-
-					# Get .osu file from osu servers
-					fileContent = osuapiHelper.getOsuFileFromID(self.beatmap.beatmapID)
-
-					# Make sure osu servers returned something
-					if fileContent is None:
-						raise exceptions.osuApiFailException(MODULE_NAME)
-
-					# Delete old .osu file if it exists
-					if os.path.isfile(mapFile):
-						os.remove(mapFile)
-
-					# Save .osu file
-					with open(mapFile, "wb+") as f:
-						f.write(fileContent.encode("latin-1"))
-				else:
-					# Map file is already in folder
-					consoleHelper.printRippoppaiMessage("Found beatmap file {}".format(mapFile))
-			except Exception:
-				pass
+			mapsHelper.cacheMap(mapFile, self.beatmap)
 
 			# Base command
 

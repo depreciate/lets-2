@@ -40,7 +40,9 @@ if __name__ == "__main__":
 
 		# Create score object and set its data
 		s = score.score()
+		s.passed = True
 		s.setDataFromDict(scoreData)
+		s.gameMode = scoreData["play_mode"]
 		if s.scoreID == 0:
 			# Make sure the score exists
 			if glob.debug:
@@ -66,7 +68,7 @@ if __name__ == "__main__":
 
 		# Calculate score pp
 		s.calculatePP(b)
-
+		consoleHelper.printColored("[!] pp {}".format(s.pp), bcolors.RED)
 		# Update score pp in dictionary
 		scoreData["pp"] = s.pp
 		return True
@@ -192,6 +194,7 @@ if __name__ == "__main__":
 	parser.add_argument('-r','--recalc', help="recalculate pp for every score", required=False, action='store_true')
 	parser.add_argument('-z','--zero', help="calculate pp for 0 pp scores", required=False, action='store_true')
 	parser.add_argument('-i','--id', help="calculate pp for score with this id", required=False)
+	parser.add_argument('-b','--bmid', help="calculate pp for scores on this beatmap", required=False)
 	parser.add_argument('-m','--mods', help="calculate pp for scores with this mod (mod id)", required=False)
 	parser.add_argument('-g','--gamemode', help="calculate pp for scores with this gamemode (std:0, mania:3)", required=False)
 	parser.add_argument('-u','--userid', help="calculate pp for scores played by a specific user (userID)", required=False)
@@ -234,27 +237,32 @@ if __name__ == "__main__":
 	if args.zero:
 		# 0pp recalc
 		print("> Recalculating pp for zero-pp scores")
-		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode = 0 OR scores.play_mode = 3) AND scores.completed = 3 AND scores.pp = 0 ORDER BY scores.id DESC;")
+		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode != 2) AND scores.completed = 3 AND scores.pp = 0 ORDER BY scores.id DESC;")
 		massRecalc(scores, workers)
 	elif args.recalc:
 		# Full recalc
 		print("> Recalculating pp for every score")
-		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode = 0 OR scores.play_mode = 3) AND scores.completed = 3 ORDER BY scores.id DESC;")
+		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode != 2) AND scores.completed = 3 ORDER BY scores.id DESC;")
 		massRecalc(scores, workers)
 	elif args.mods is not None:
 		# Mods recalc
 		print("> Recalculating pp for scores with mods {}".format(args.mods))
-		allScores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode = 0 OR scores.play_mode = 3) AND scores.completed = 3 ORDER BY scores.id DESC;")
+		allScores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode != 2) AND scores.completed = 3 ORDER BY scores.id DESC;")
 		scores = []
 		for i in allScores:
 			if i["mods"] & int(args.mods) > 0:
 				#consoleHelper.printColored("> PP for score {} will be recalculated (mods: {})".format(i["id"], i["mods"]), bcolors.GREEN)
 				scores.append(i)
 		massRecalc(scores, workers)
+	
+	elif args.bmid is not None:
+		print("> Recalculating pp for beatmap id ID {}".format(args.bmid))
+		scores = glob.db.fetchAll("SELECT scores.*,beatmaps.*  FROM beatmaps LEFT JOIN scores ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE  beatmaps.beatmap_id = %s AND scores.completed = 3;", [args.bmid])
+		massRecalc(scores, workers)
 	elif args.id is not None:
 		# Score ID recalc
 		print("> Recalculating pp for score ID {}".format(args.id))
-		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode = 0 OR scores.play_mode = 3) AND scores.completed = 3 AND scores.id = %s;", [args.id])
+		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE  scores.id = %s;", [args.id])
 		massRecalc(scores, workers)
 	elif args.gamemode is not None:
 		# game mode recalc
@@ -264,14 +272,14 @@ if __name__ == "__main__":
 	elif args.userid is not None:
 		# User ID recalc
 		print("> Recalculating pp for user {}".format(args.userid))
-		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode = 0 OR scores.play_mode = 3) AND scores.completed = 3 AND scores.userid = %s;", [args.userid])
+		scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode != 2) AND scores.completed = 3 AND scores.userid = %s;", [args.userid])
 		massRecalc(scores, workers)
 	elif args.username is not None:
 		# Username recalc
 		print("> Recalculating pp for user {}".format(args.username))
 		uid = userUtils.getID(args.username)
 		if uid != 0:
-			scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode = 0 OR scores.play_mode = 3) AND scores.completed = 3 AND scores.userid = %s;", [uid])
+			scores = glob.db.fetchAll("SELECT * FROM scores LEFT JOIN beatmaps ON scores.beatmap_md5 = beatmaps.beatmap_md5 WHERE (scores.play_mode != 2) AND scores.completed = 3 AND scores.userid = %s;", [uid])
 			massRecalc(scores, workers)
 		# TODO: error message xd
 
