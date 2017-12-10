@@ -34,7 +34,7 @@ class piano:
 	# Folder where oppai is placed
 	OPPAI_FOLDER = "../lets/omppc"
 
-	def __init__(self, __beatmap, __score = None, acc = 0, mods = 0):
+	def __init__(self, __beatmap, __score = None, acc = 0, mods = 0, tillerino = False, stars = False):
 		"""
 		Set oppai params.
 
@@ -47,9 +47,10 @@ class piano:
 		"""
 		# Default values
 		self.pp = 0
+		self.stars = 0
 		self.score = None
-		self.acc = 0
-		self.mods = 0
+		self.acc = acc
+		self.mods = mods
 		self.beatmap = __beatmap
 		self.map = "{}.osu".format(self.beatmap.beatmapID)
 
@@ -57,10 +58,9 @@ class piano:
 			self.score = __score
 			self.acc = self.score.accuracy*100
 			self.mods = self.score.mods
+		self.getPP(tillerino, stars)
 
-		self.getPP()
-
-	def getPP(self):
+	def getPP(self, tillerino=False, stars=False):
 		"""
 		Calculate total pp value with oppai and return it
 
@@ -68,6 +68,7 @@ class piano:
 		"""
 		# Set variables
 		self.pp = 0
+		self.stars = 0
 		try:
 			# Build .osu map file path
 			mapFile = "/data/oppai/maps/{map}".format(map=self.map)
@@ -76,9 +77,21 @@ class piano:
 
 			# Base command
 
-			calc = omppc.Calculator(mapFile, score=self.score.score, mods=self.mods, accuracy=self.acc)
-			pp = calc.calculate_pp()[0]
+			if tillerino == True:
+				pp_list = []
+				for acc in [100, 99, 98, 95]:
+					calc = omppc.Calculator(mapFile, score=1000000, mods=self.mods, accuracy=acc)
+					pp = calc.calculate_pp()[0]
+					pp_list.append(round(pp, 2))	
+			else:
+				calc = omppc.Calculator(mapFile, score=(self.score.score if self.score is not None else 1000000), mods=self.mods, accuracy=self.acc)
+				pp = calc.calculate_pp()[0]			
+			if stars == True:
+				self.stars = round(calc.calculate_stars(),5)
 			consoleHelper.printRippoppaiMessage("calculated pp {}".format(pp))
-			self.pp = pp
+			if(tillerino == True):
+				self.pp = pp_list
+			else:
+				self.pp = round(pp,2)
 		finally:
 			return self.pp

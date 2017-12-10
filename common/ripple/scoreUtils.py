@@ -32,7 +32,6 @@ def scoreType(m):
 	r = "1" 
 	if m & mods.SCOREV2 > 0:
 		r = "2"
-	log.info("scorev{ver} MODS: {modss}".format(ver=r,modss=m))
 	return r
 def readableMods(m):
 	"""

@@ -14,6 +14,7 @@ from common.web import requestsManager
 from constants import exceptions
 from objects import glob
 from pp import rippoppai
+from pp import omppcPy
 from common.sentry import sentry
 
 MODULE_NAME = "api/pp"
@@ -96,7 +97,7 @@ class handler(requestsManager.asyncRequestHandler):
 				raise exceptions.invalidBeatmapException(MODULE_NAME)
 			beatmapMd5 = osuapiData["file_md5"]
 			beatmapSetID = osuapiData["beatmapset_id"]"""
-			dbData = glob.db.fetch("SELECT beatmap_md5, beatmapset_id FROM beatmaps WHERE beatmap_id = {}".format(beatmapID))
+			dbData = glob.db.fetch("SELECT beatmap_md5, beatmapset_id, mode FROM beatmaps WHERE beatmap_id = {}".format(beatmapID))
 			if dbData is None:
 				raise exceptions.invalidBeatmapException(MODULE_NAME)
 
@@ -105,24 +106,24 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Create beatmap object
 			bmap = beatmap.beatmap(beatmapMd5, beatmapSetID)
-
+			stars = 0
 			# Check beatmap length
 			if bmap.hitLength > 900:
 				raise exceptions.beatmapTooLongException(MODULE_NAME)
 
 			returnPP = []
 			if gameMode == gameModes.STD and bmap.starsStd == 0:
-				# Mode Specific beatmap, auto detect game mode
-				raise exceptions.unsupportedGameModeException
+				gameMode = dbData["mode"]
+				if(gameMode == 2):
+					raise exceptions.unsupportedGameModeException
 			if accuracy > 100 or combo > bmap.maxCombo or misses < 0 or math.isnan(accuracy):
 				raise exceptions.invalidArgumentsException(MODULE_NAME)
 			# Calculate pp
-			if gameMode == gameModes.STD:
+			if gameMode != 2:
 				# Std pp
-				if accuracy < 0 and combo == 0 and misses == 0:
+				if accuracy < 0 and combo == 0 and misses == 0 and gameMode == dbData["mode"]:
 					# Generic acc
 					# Get cached pp values
-					log.warning("requested pp for bm {} acc {} mods {} ".format(bmap.songName, accuracy, modsEnum))
 					cachedPP = bmap.getCachedTillerinoPP()
 					if(modsEnum == 0 and cachedPP != [0,0,0,0]):
 						log.debug("Got cached pp.")
@@ -130,9 +131,14 @@ class handler(requestsManager.asyncRequestHandler):
 					else:
 						log.debug("Cached pp not found. Calculating pp with oppai...")
 						# Cached pp not found, calculate them
-						oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=True, stars=True)
-						returnPP = oppai.pp
-						bmap.starsStd = oppai.stars
+						if(gameMode == 1 or gameMode == 0):
+							oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=True, stars=True)
+							returnPP = oppai.pp
+							stars = oppai.stars
+						else:
+							xeno = omppcPy.piano(bmap, mods=modsEnum, tillerino=True, stars=True)
+							returnPP = xeno.pp
+							stars = xeno.stars
 
 						# Cache values in DB
 						log.debug("Saving cached pp...")
@@ -141,17 +147,25 @@ class handler(requestsManager.asyncRequestHandler):
 				else:
 					# Specific accuracy, calculate
 					# Create oppai instance
-					log.debug("Specific request ({}%/{}). Calculating pp with oppai...".format(accuracy, modsEnum))
-					oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=False, stars=True)
-					bmap.starsStd = oppai.stars
-					if accuracy > 0:
-						oppai.acc = accuracy
-					if combo > 0:
-						oppai.combo = combo
-					if misses > 0:
-						oppai.misses = misses	
-					oppai.getPP()
-					returnPP.append(oppai.pp)
+					if(gameMode == 3):
+							log.info("Specific request ({}%/{}). Calculating pp with omppc...".format(accuracy, modsEnum))
+							xeno = omppcPy.piano(bmap, acc=accuracy, mods=modsEnum, tillerino=False, stars=True)
+							returnPP.append(xeno.pp)
+							stars = xeno.stars	
+					else:
+						if(gameMode != 0 and gameMode != 1):
+							raise exceptions.unsupportedGameModeException
+						log.debug("Specific request ({}%/{}). Calculating pp with oppai...".format(accuracy, modsEnum))
+						oppai = rippoppai.oppai(bmap, mods=modsEnum, tillerino=False, stars=True)
+						stars = oppai.stars
+						if accuracy > 0:
+							oppai.acc = accuracy
+						if combo > 0:
+							oppai.combo = combo
+						if misses > 0:
+							oppai.misses = misses	
+						oppai.getPP()
+						returnPP.append(oppai.pp)
 			else:
 				raise exceptions.unsupportedGameModeException
 
@@ -160,7 +174,7 @@ class handler(requestsManager.asyncRequestHandler):
 				"song_name": bmap.songName,
 				"pp": returnPP,
 				"length": bmap.hitLength,
-				"stars": bmap.starsStd,
+				"stars": stars,
 				"ar": bmap.AR,
 				"od": bmap.OD,
 				"bpm": bmap.bpm,

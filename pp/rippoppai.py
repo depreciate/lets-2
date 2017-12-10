@@ -104,7 +104,12 @@ class oppai:
 				raise OppaiError("No pp/stars entry in oppai json output")
 			pp = output["pp"]
 			stars = output["stars"]
-
+			if(self.gameMode == gameModes.STD):
+				mod = "difficulty_{}".format(scoreUtils.readableMods(self.mods & 80))
+				if(mod == "difficulty_HR" or mod == "difficulty_DT"):
+					diff = glob.db.fetch("SELECT {} FROM beatmaps WHERE beatmap_md5 = '{}'".format(mod, self.beatmap.fileMD5))[mod]
+					if(diff == 0):
+						glob.db.execute("UPDATE beatmaps SET {} = {} WHERE beatmap_md5 = '{}'".format(mod, round(stars,5), self.beatmap.fileMD5))
 			log.debug("oppai ~> full output: {}".format(output))
 			log.debug("oppai ~> pp: {}, stars: {}".format(pp, stars))
 		except (json.JSONDecodeError, IndexError, OppaiError) as e:
@@ -148,11 +153,9 @@ class oppai:
 			command += " -ojson"
 			# Calculate pp
 			if not self.tillerino:
-				log.error(self.gameMode)
 				# self.pp, self.stars = self._runOppaiProcess(command)
 				temp_pp, self.stars = self._runOppaiProcess(command)
-				if (self.gameMode == gameModes.TAIKO and self.beatmap.starsStd > 0 and temp_pp > 800) or \
-					self.stars > 50:
+				if (self.gameMode == gameModes.TAIKO and self.beatmap.starsStd > 0 and temp_pp > 800) or self.stars > 50:
 					# Invalidate pp for bugged taiko converteds and bugged inf pp std maps
 					self.pp = 0
 				else:

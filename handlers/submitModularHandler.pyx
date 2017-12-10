@@ -119,7 +119,7 @@ class handler(requestsManager.asyncRequestHandler):
 			beatmapInfo.setDataFromDB(s.fileMd5)
 			# Make sure the beatmap is submitted and updated
 			if beatmapInfo.rankedStatus <= rankedStatuses.NEED_UPDATE:
-				log.error(beatmapInfo.setDataFromDB(s.fileMd5))
+				
 				log.debug("Beatmap is not submitted/outdated/unknown. Score submission aborted.")
 				return
 			# Calculate PP
@@ -194,18 +194,18 @@ class handler(requestsManager.asyncRequestHandler):
 					plEnc = self.get_argument("pl")
 					processList = aeshelper.decryptRinjdael(aeskey, iv, plEnc, True).split("\n")
 					blackList = glob.db.fetchAll("SELECT * FROM blacklist")
-					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
-					if(allo == 0):
-						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
-						of = "{}.txt".format(username)
-						glob.fileBuffers.write(".data/pl/"+of, '[{}]'.format(generalUtils.getTimestamp())+''.join(processList)+ENDL)
-
 					for process in processList:
 						procHash = process.split(" | ")[0].split(" ",1)
 						if len(procHash[0]) > 10:
 							for black in blackList:
 								if procHash[0] == black["hash"]:
 									log.warning("{} ({}) blacklisted proccess has been found on process list ({}) path: {}".format(username,userID,black["name"], procHash[1]),"cm")
+									glob.db.execute("UPDATE users SET allowed = 1 WHERE id = %s",[userID])
+					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
+					if(allo == 0):
+						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
+						of = "{}.txt".format(username)
+						glob.fileBuffers.write(".data/pl/"+of, '[{}]'.format(generalUtils.getTimestamp())+''.join(processList)+ENDL)
 				except: 
 					log.error("{}{}".format(sys.exc_info(), traceback.format_exc()))
 					pass

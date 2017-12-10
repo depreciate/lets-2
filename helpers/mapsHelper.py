@@ -7,15 +7,18 @@ from helpers import osuapiHelper
 
 def isBeatmap(fileName=None, content=None):
     if fileName is not None:
-        with open(fileName, "rb") as f:
-            firstLine = f.readline().decode("utf-8").strip()
+        try:
+            with open(fileName, "rb") as f:
+                firstLine = f.readline().decode("utf-8").strip()
+        except IndexError:
+            return False
     elif content is not None:
         try:
             firstLine = content.decode("utf-8").split("\n")[0].strip()
-        except IndexError:
+        except:
             return False
     else:
-        raise ValueError("Either `fileName` or `content` must be provided.")
+        return False
     try:
         if(firstLine[0] != "o"):
             firstLine = firstLine.lower()[1:]
@@ -46,8 +49,7 @@ def cacheMap(mapFile, _beatmap):
 
         # Make sure osu servers returned something
         if fileContent is None or not isBeatmap(content=fileContent):
-            log.error(isBeatmap(content=fileContent))
-            raise exceptions.osuApiFailException("maps")
+            raise exceptions.osuApiFailException(_beatmap.beatmapID)
 
         # Delete old .osu file if it exists
         if os.path.isfile(mapFile):

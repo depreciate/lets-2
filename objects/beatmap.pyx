@@ -154,12 +154,11 @@ class beatmap:
 
 		# Make sure the query returned something
 		if data is None:
-			log.warning("not found "+md5)
 			return False
 
 		# Make sure the beatmap is not an old one
 		if data["difficulty_taiko"] == 0 and data["difficulty_ctb"] == 0 and data["difficulty_mania"] == 0:
-			log.error("Difficulty for non-std gamemodes not found in DB, refreshing data from osu!api...")
+			log.info("Difficulty for non-std gamemodes not found in DB, refreshing data from osu!api...")
 			return False
 
 		# Set cached data period
