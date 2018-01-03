@@ -104,9 +104,9 @@ class oppai:
 				raise OppaiError("No pp/stars entry in oppai json output")
 			pp = output["pp"]
 			if(self.mods & 128 > 0):
-				pp = output["aim_pp"] ** 0.95
+				pp = output["aim_pp"] ** 0.9625
 			if(self.mods & 8192 > 0):
-				pp = output["speed_pp"] ** 0.95	+ output["acc_pp"]
+				pp = output["speed_pp"] + output["acc_pp"] ** 0.99
 
 			stars = output["stars"]
 			if(self.gameMode == gameModes.STD):
