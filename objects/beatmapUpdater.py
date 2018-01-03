@@ -20,13 +20,13 @@ class BeatmapUpdater:
 		self.UpdateWrongDiff()
 		
 	def UpdateWrongDiff(self):
-		bm = glob.db.fetch("SELECT beatmap_id,ranked, latest_update, beatmapset_id, beatmap_md5  FROM beatmaps WHERE mode = 0 AND difficulty_std = 0 ORDER BY latest_update DESC LIMIT 1")
+		bm = glob.db.fetch("SELECT beatmap_id,ranked, latest_update, beatmapset_id, beatmap_md5  FROM beatmaps WHERE mode = 0 AND difficulty_std = 0 AND hit_length>30 ORDER BY latest_update DESC LIMIT 1")
 		if bm is not None:
 			bmap = beatmap.beatmap(bm["beatmap_md5"], bm["beatmapset_id"], refresh=True)
 			if(bmap.rankedStatus == rankedStatuses.NEED_UPDATE or bmap.rankedStatus < rankedStatuses.PENDING):
 				self.stats["updated"] += 1
 			self.stats["total"] += 1
-		threading.Timer(self.time, self.UpdateWrongDiff).start()
+		threading.Timer(self.time/4, self.UpdateWrongDiff).start()
 		return
 
 	def UpdateQualif(self):

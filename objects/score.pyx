@@ -1,5 +1,5 @@
 import time
-
+from common.constants import mods
 from objects import beatmap
 from common.constants import gameModes
 from common.log import logUtils as log
@@ -199,6 +199,8 @@ class score:
 		Set this score completed status and rankedScoreIncrease
 		"""
 		self.completed = 0
+		if((self.mods & mods.RELAX > 0) or (self.mods & mods.RELAX2 > 0)) and self.passed == True:
+			self.completed = 2		
 		if self.passed == True and scoreUtils.isRankable(self.mods):
 			# Get userID
 			userID = userUtils.getID(self.playerName)
@@ -213,7 +215,7 @@ class score:
 			# No duplicates found.
 			# Get right "completed" value
 			scoreBest = glob.db.fetch("SELECT id, score, mods, pp, completed FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed > 2 ORDER by score desc LIMIT 1", [userID, self.fileMd5, self.gameMode])
-			personalBest = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 ORDER BY pp DESC  LIMIT 1", [userID, self.fileMd5, self.gameMode])
+			personalBest = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1", [userID, self.fileMd5, self.gameMode])
 			if personalBest is None:
 				# This is our first score on this map, so it's our best score
 				self.completed = 3
