@@ -128,6 +128,7 @@ class handler(requestsManager.asyncRequestHandler):
 					if(modsEnum == 0 and cachedPP != [0,0,0,0]):
 						log.debug("Got cached pp.")
 						returnPP = cachedPP
+						stars = bmap.starsStd
 					else:
 						log.debug("Cached pp not found. Calculating pp with oppai...")
 						# Cached pp not found, calculate them

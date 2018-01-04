@@ -39,7 +39,10 @@ class handler(requestsManager.asyncRequestHandler):
 			userID = userUtils.getID(username)
 			if not userUtils.checkLogin(userID, password):
 				raise exceptions.loginFailedException(MODULE_NAME, username)
-
+			if glob.redis.get("lets:screenshot:{}".format(userID)) is not None:
+				self.write("no")
+				return
+			glob.redis.set("lets:screenshot:{}".format(userID), 1, 60)
 			# Get a random screenshot id
 			found = False
 			screenshotID = ""

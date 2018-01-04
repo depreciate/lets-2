@@ -10,8 +10,15 @@ from objects import glob
 from pp import rippoppai
 from pp import omppcPy
 from pp import wifipiano2
+from pp import cicciobello
 
 class score:
+	PP_CALCULATORS = {
+		gameModes.STD: rippoppai.oppai,
+		gameModes.TAIKO: rippoppai.oppai,
+		gameModes.CTB: cicciobello.Cicciobello,
+		gameModes.MANIA: omppcPy.piano
+	}
 	def __init__(self, scoreID = None, rank = None, setData = True):
 		"""
 		Initialize a (empty) score object.
@@ -295,11 +302,7 @@ class score:
 
 		# Create an instance of the magic pp calculator and calculate pp
 		if self.passed == True and b.rankedStatus != rankedStatuses.LOVED:
-			if self.gameMode == gameModes.STD or self.gameMode == gameModes.TAIKO:
-				fo = rippoppai.oppai(b, self)
-				self.pp = fo.pp
-			elif self.gameMode == gameModes.MANIA:
-				xeno = omppcPy.piano(b, self)
-				self.pp = xeno.pp
+				calculator = score.PP_CALCULATORS[self.gameMode](b, self)
+				self.pp = calculator.pp
 		else:
 			self.pp = 0.0

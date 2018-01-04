@@ -124,7 +124,7 @@ class handler(requestsManager.asyncRequestHandler):
 				return
 			# Calculate PP
 			# NOTE: PP are std and mania only
-			if s.gameMode == gameModes.STD or s.gameMode == gameModes.MANIA or s.gameMode == gameModes.TAIKO and s.completed > 0:
+			if s.completed > 0:
 				s.calculatePP()
 
 			# Restrict obvious cheaters
@@ -200,7 +200,7 @@ class handler(requestsManager.asyncRequestHandler):
 							for black in blackList:
 								if procHash[0] == black["hash"]:
 									log.warning("{} ({}) blacklisted proccess has been found on process list ({}) path: {}".format(username,userID,black["name"], procHash[1]),"cm")
-									glob.db.execute("UPDATE users SET allowed = 1 WHERE id = %s",[userID])
+									glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])
 					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
 					if(allo == 0):
 						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
@@ -257,16 +257,8 @@ class handler(requestsManager.asyncRequestHandler):
 				# Get new stats
 				newUserData = userUtils.getUserStats(userID, s.gameMode)
 				glob.userStatsCache.update(userID, s.gameMode, newUserData)
-
-				# Use pp/score as "total" based on game mode
-				if s.gameMode == gameModes.STD or s.gameMode == gameModes.MANIA or s.gameMode == gameModes.TAIKO:
-					criteria = "pp"
-				else:
-					criteria = "rankedScore"
-
-				# Update leaderboard if score/pp has changed
 				if s.completed == 3:
-					leaderboardHelper.update(userID, newUserData[criteria], s.gameMode)
+					leaderboardHelper.update(userID, newUserData["pp"], s.gameMode)
 
 			# TODO: Update total hits and max combo
 			# Update latest activity
@@ -383,7 +375,13 @@ class handler(requestsManager.asyncRequestHandler):
 						firstPlacesUpdateThread = threading.Thread(None,lambda : userUtils.recalcFirstPlaces(userID))
 						firstPlacesUpdateThread.start()
 					
-						annmsg = "[https://osu.gatari.pw/u/{} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})".format(userID, username, beatmapInfo.beatmapID, beatmapInfo.songName, gameModes.getGamemodeFull(s.gameMode))
+						annmsg = "[https://osu.gatari.pw/u/{} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})".format(
+ 						userID,
+ 						username.encode().decode("ASCII", "ignore"),
+ 						beatmapInfo.beatmapID,
+ 						beatmapInfo.songName.encode().decode("ASCII", "ignore"),
+ 						gameModes.getGamemodeFull(s.gameMode)
+ 						)
 						params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
 						requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 						if (len(newScoreboard.scores) > 2):
