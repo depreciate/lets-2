@@ -211,7 +211,7 @@ class handler(requestsManager.asyncRequestHandler):
 								if black in procHash[1].lower():
 										cachedPlN = glob.redis.get("lets:pln:{}".format(userID))
 										if cachedPlN is not None:
-											if cachedPl.decode("ascii","ignore") is not procHash[1].lower():
+											if cachedPlN.decode("ascii","ignore") is not procHash[1].lower():
 												glob.redis.set("lets:pln:{}".format(userID), procHash[1].lower(), 86400)
 												log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess name has been found on process list ({})\r\nInfo: {}".format(username,userID,black, process),"cm")
 												glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])								
