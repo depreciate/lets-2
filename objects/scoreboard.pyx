@@ -133,10 +133,6 @@ class scoreboard:
 				s.setDataFromDict(topScore)
 				s.setRank(c)
 
-				# Check if this top 50 score is our personal best
-				if s.playerName == self.username:
-					self.personalBestRank = c
-
 				# Add this score to scores list and increment rank
 				self.scores.append(s)
 				c+=1

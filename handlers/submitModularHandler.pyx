@@ -196,11 +196,25 @@ class handler(requestsManager.asyncRequestHandler):
 					blackList = glob.db.fetchAll("SELECT * FROM blacklist")
 					for process in processList:
 						procHash = process.split(" | ")[0].split(" ",1)
-						if len(procHash[0]) > 10:
+						if len(procHash[0]) > 10 and len(procHash) > 1:
+							blacknameList = ["replaybot","mpgh","replaycopyneko","copyneko","relax","osu!auto","osuauto","aquila","holly is cute","replayridor"]
 							for black in blackList:
 								if procHash[0] == black["hash"]:
-									log.warning("{} ({}) blacklisted proccess has been found on process list ({}) path: {}".format(username,userID,black["name"], procHash[1]),"cm")
-									glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])
+									cachedPl = glob.redis.get("lets:pl:{}".format(userID))
+									if cachedPl is not None:
+										if cachedPl.decode("ascii","ignore") is not black["hash"]:
+											glob.redis.set("lets:pl:{}".format(userID), black["hash"], 86400)
+											log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess has been found on process list ({})\r\nInfo: {}".format(username,userID,black["name"], process),"cm")									
+											glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])	
+										continue
+							for black in blacknameList:
+								if black in procHash[1].lower():
+										cachedPlN = glob.redis.get("lets:pln:{}".format(userID))
+										if cachedPlN is not None:
+											if cachedPl.decode("ascii","ignore") is not procHash[1].lower():
+												glob.redis.set("lets:pln:{}".format(userID), procHash[1].lower(), 86400)
+												log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess name has been found on process list ({})\r\nInfo: {}".format(username,userID,black, process),"cm")
+												glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])								
 					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
 					if(allo == 0):
 						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
@@ -376,12 +390,12 @@ class handler(requestsManager.asyncRequestHandler):
 						firstPlacesUpdateThread.start()
 					
 						annmsg = "[https://osu.gatari.pw/u/{} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})".format(
- 						userID,
- 						username.encode().decode("ASCII", "ignore"),
- 						beatmapInfo.beatmapID,
- 						beatmapInfo.songName.encode().decode("ASCII", "ignore"),
- 						gameModes.getGamemodeFull(s.gameMode)
- 						)
+						userID,
+						username.encode().decode("ASCII", "ignore"),
+						beatmapInfo.beatmapID,
+						beatmapInfo.songName.encode().decode("ASCII", "ignore"),
+						gameModes.getGamemodeFull(s.gameMode)
+						)
 						params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
 						requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 						if (len(newScoreboard.scores) > 2):
