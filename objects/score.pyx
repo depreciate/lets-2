@@ -229,13 +229,12 @@ class score:
 				self.rankedScoreIncrease = self.score
 				self.oldPersonalBest = 0
 			else:
-				if self.gameMode == gameModes.STD or self.gameMode == gameModes.MANIA or self.gameMode == gameModes.TAIKO:
-					b = beatmap.beatmap(self.fileMd5, 0)
-					self.calculatePP(b=b)
+				b = beatmap.beatmap(self.fileMd5, 0)
+				self.calculatePP(b=b)
 
 				withThisMods = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed>= 3 AND mods = %s ORDER BY pp DESC LIMIT 1", [userID, self.fileMd5, self.gameMode, self.mods])
 				ok_sub = False
-				if self.gameMode == gameModes.STD and b.rankedStatus != rankedStatuses.LOVED:
+				if b.rankedStatus != rankedStatuses.LOVED:
 					if self.pp > personalBest["pp"] or (self.pp == personalBest["pp"] and self.score > personalBest["score"]):
 						self.completed = 3
 						self.rankedScoreIncrease = self.score - personalBest["score"]

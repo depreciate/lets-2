@@ -197,24 +197,22 @@ class handler(requestsManager.asyncRequestHandler):
 					for process in processList:
 						procHash = process.split(" | ")[0].split(" ",1)
 						if len(procHash[0]) > 10 and len(procHash) > 1:
-							blacknameList = ["replaybot","mpgh","replaycopyneko","copyneko","relax","osu!auto","osuauto","aquila","holly is cute","replayridor"]
+							blacknameList = ["replaybot","raze v","mpgh","replaycopyneko","copyneko","relax","osu!auto","osuauto","aquila","holly is cute","replayridor"]
 							for black in blackList:
 								if procHash[0] == black["hash"]:
 									cachedPl = glob.redis.get("lets:pl:{}".format(userID))
-									if cachedPl is not None:
-										if cachedPl.decode("ascii","ignore") is not black["hash"]:
-											glob.redis.set("lets:pl:{}".format(userID), black["hash"], 86400)
-											log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess has been found on process list ({})\r\nInfo: {}".format(username,userID,black["name"], process),"cm")									
-											glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])	
-										continue
+									if cachedPl is None or cachedPl.decode("ascii","ignore") != black["hash"]:
+										glob.redis.set("lets:pl:{}".format(userID), black["hash"], 86400)
+										log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess has been found on process list ({})\r\nInfo: {}".format(username,userID,black["name"], process),"cm")									
+										glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])	
+									continue
 							for black in blacknameList:
 								if black in procHash[1].lower():
 										cachedPlN = glob.redis.get("lets:pln:{}".format(userID))
-										if cachedPlN is not None:
-											if cachedPlN.decode("ascii","ignore") is not procHash[1].lower():
-												glob.redis.set("lets:pln:{}".format(userID), procHash[1].lower(), 86400)
-												log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess name has been found on process list ({})\r\nInfo: {}".format(username,userID,black, process),"cm")
-												glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])								
+										if cachedPlN is None or cachedPlN.decode("ascii","ignore") != procHash[1].lower():
+											glob.redis.set("lets:pln:{}".format(userID), procHash[1].lower(), 86400)
+											log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess name has been found on process list ({})\r\nInfo: {}".format(username,userID,black, process),"cm")
+											glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])								
 					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
 					if(allo == 0):
 						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
