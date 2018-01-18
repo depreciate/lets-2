@@ -1,7 +1,7 @@
 from common.constants import mods
 from common.log import logUtils as log
 
-def isRankable(m):
+def isRankable(m, gameMode = 0):
 	"""
 	Checks if `m` contains unranked mods
 
@@ -9,7 +9,10 @@ def isRankable(m):
 	:return: True if there are no unranked mods in `m`, else False
 	"""
 	# TODO: Check other modes unranked mods ...?
-	return not (m & mods.AUTOPLAY > 0)
+	if gameMode != 0: 
+		return not ((m & mods.RELAX > 0) or (m & mods.RELAX2 > 0) or (m & mods.AUTOPLAY > 0) or (m & mods.SCOREV2 > 0))
+	else:
+		return not (m & mods.AUTOPLAY > 0)
 
 def readableGameMode(gameMode):
 	"""

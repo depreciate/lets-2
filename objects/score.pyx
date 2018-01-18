@@ -206,7 +206,7 @@ class score:
 		Set this score completed status and rankedScoreIncrease
 		"""
 		self.completed = 0	
-		if self.passed == True and scoreUtils.isRankable(self.mods):
+		if self.passed == True and scoreUtils.isRankable(self.mods, self.gameMode):
 			# Get userID
 			userID = userUtils.getID(self.playerName)
 
@@ -248,16 +248,9 @@ class score:
 									self.oldPersonalBest = withThisMods["id"]
 								self.completed = 4
 						else:
-							if(self.score > scoreBest["score"]):
-								self.completed = 4
-								self.rankedScoreIncrease = 0 
-								self.oldPersonalBest = 0 
-								if(scoreBest["pp"] < self.pp):
-									self.oldPersonalBest = scoreBest["id"]
-							else:
-								self.completed = 2
-								self.rankedScoreIncrease = 0 
-								self.oldPersonalBest = 0
+							self.completed = 4
+							self.rankedScoreIncrease = 0 
+							self.oldPersonalBest = 0 
 				else:		
 					if (self.score > personalBest["score"]):
 						self.completed = 3

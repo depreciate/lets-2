@@ -367,7 +367,8 @@ class handler(requestsManager.asyncRequestHandler):
 					}))
 
 				# replay anticheat
-				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 90 and s.gameMode == 0:
+
+				if (s.mods & mods.RELAX < 1 and s.mods & mods.RELAX2 < 1) and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 90 and s.gameMode == 0:
 					glob.redis.publish("hax:newscore", json.dumps({
 					"username":username,
 					"userID": userID,
