@@ -143,7 +143,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 						# Cache values in DB
 						log.debug("Saving cached pp...")
-						if(modsEnum == 0 and len(returnPP) == 4):
+						if(modsEnum == 0 and type(returnPP) != int and len(returnPP) == 4):
 							bmap.saveCachedTillerinoPP(returnPP)
 				else:
 					# Specific accuracy, calculate

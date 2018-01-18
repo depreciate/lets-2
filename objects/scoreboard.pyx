@@ -60,9 +60,9 @@ class scoreboard:
 
 
 			if self.country:
-				country = "AND (mods & 536870912 > 0)"
+				country = "AND (mods & 536879232 > 0)"
 			else:
-				country = "AND (mods & 536870912 < 1)"
+				country = "AND (mods & 536879232 < 1)"
 
 			# Mods
 			if self.mods > -1:
@@ -192,9 +192,9 @@ class scoreboard:
 		) AND scores.beatmap_md5 = %(md5)s AND scores.play_mode = %(mode)s AND scores.completed = 3 AND users.privileges & 1 > 0"""
 		# Country
 		if self.country:
-			query += " AND (scores.mods & 536870912 > 0)"
+			query += " AND (scores.mods & 536879232 > 0)"
 		else:
-			query += " AND (scores.mods & 536870912 < 1)"
+			query += " AND (scores.mods & 536879232 < 1)"
 		# Mods
 		if self.mods > -1:
 			query += " AND scores.mods = %(mods)s"

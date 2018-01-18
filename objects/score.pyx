@@ -205,9 +205,7 @@ class score:
 		"""
 		Set this score completed status and rankedScoreIncrease
 		"""
-		self.completed = 0
-		if((self.mods & mods.RELAX > 0) or (self.mods & mods.RELAX2 > 0)) and self.passed == True:
-			self.completed = 2		
+		self.completed = 0	
 		if self.passed == True and scoreUtils.isRankable(self.mods):
 			# Get userID
 			userID = userUtils.getID(self.playerName)

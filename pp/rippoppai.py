@@ -103,10 +103,6 @@ class oppai:
 			if "pp" not in output or "stars" not in output:
 				raise OppaiError("No pp/stars entry in oppai json output")
 			pp = output["pp"]
-			if(self.mods & 128 > 0):
-				pp = output["aim_pp"] ** 0.9625
-			if(self.mods & 8192 > 0):
-				pp = output["speed_pp"] + output["acc_pp"] ** 0.99
 
 			stars = output["stars"]
 			if(self.gameMode == gameModes.STD):
@@ -140,7 +136,7 @@ class oppai:
 			command = fixPath("{path}/oppai {mapFile}".format(path=self.OPPAI_FOLDER, mapFile=mapFile))
 
 			# Use only mods supported by oppai.
-			modsFixed = self.mods & 5983
+			modsFixed = self.mods & 14303
 			command += " scorev{ver}".format(ver=scoreUtils.scoreType(self.mods))
 			# Add params if needed
 			if not self.tillerino:

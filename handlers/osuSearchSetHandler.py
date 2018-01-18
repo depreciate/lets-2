@@ -24,7 +24,7 @@ class handler(requestsManager.asyncRequestHandler):
 			elif "s" in self.request.arguments:
 				response = requests.get("https://osu.gatari.pw/api/v1/beatmaps/searchset?s={}".format(self.get_argument("s")))
 			else:
-				raise exceptions.invalidArgumentsException(MODULE_NAME)
+				return
 			output += response.text
 		finally:
 			self.write(output)

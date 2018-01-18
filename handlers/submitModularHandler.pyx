@@ -111,7 +111,7 @@ class handler(requestsManager.asyncRequestHandler):
 			s = score.score()
 			oldStats = userUtils.getUserStats(userID, s.gameMode)
 			s.setDataFromScoreData(scoreData)
-			if s.score < 10000:
+			if ((s.passed == False and s.score < 1000) or s.score < 1):
 				return
 
 			# Get beatmap info
