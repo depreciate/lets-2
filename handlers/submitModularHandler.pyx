@@ -197,7 +197,7 @@ class handler(requestsManager.asyncRequestHandler):
 					for process in processList:
 						procHash = process.split(" | ")[0].split(" ",1)
 						if len(procHash[0]) > 10 and len(procHash) > 1:
-							blacknameList = ["replaybot","raze v","mpgh","replaycopyneko","copyneko","relax","osu!auto","osuauto","aquila","holly is cute","replayridor"]
+							blacknameList = ["replaybot","raze v","raze rezix","mpgh","replaycopyneko","copyneko","relax","osu!auto","osuauto","aquila","holly is cute","replayridor"]
 							for black in blackList:
 								if procHash[0] == black["hash"]:
 									cachedPl = glob.redis.get("lets:pl:{}".format(userID))
@@ -358,11 +358,11 @@ class handler(requestsManager.asyncRequestHandler):
 				s.calculateAccuracy()
 				# scores vk bot
 				userStats = userUtils.getUserStats(userID, s.gameMode)
-				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250 and (s.gameMode == 0 or s.gameMode == 3) :					
+				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250:					
 					glob.redis.publish("scores:new_score", json.dumps({
 					"gm":s.gameMode,
 					"user":{"username":username, "userID": userID, "rank":userStats["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":userStats["accuracy"], "oldpp":oldStats["pp"],"pp":userStats["pp"]},
-					"score":{"scoreID": s.scoreID, "mods":s.mods, "accuracy":s.accuracy, "missess":s.cMiss, "combo":s.maxCombo, "pp":s.pp, "rank":newScoreboard.personalBestRank},
+					"score":{"scoreID": s.scoreID, "mods":s.mods, "accuracy":s.accuracy, "missess":s.cMiss, "combo":s.maxCombo, "pp":s.pp, "rank":newScoreboard.personalBestRank, "ranking":s.rank},
 					"beatmap":{"beatmapID": beatmapInfo.beatmapID, "beatmapSetID": beatmapInfo.beatmapSetID, "max_combo":beatmapInfo.maxCombo, "song_name":beatmapInfo.songName}
 					}))
 

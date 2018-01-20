@@ -1,5 +1,4 @@
 from common.constants import mods
-from common.log import logUtils as log
 
 def isRankable(m, gameMode = 0):
 	"""

@@ -36,7 +36,7 @@ class handler(requestsManager.asyncRequestHandler):
 			if refresh == 1:
 				log.debug("Forced refresh")
 			apiResponse = osuapiHelper.osuApiRequest("get_beatmaps", "s={}".format(beatmapSetID), False)
-			if len(apiResponse) == 0:
+			if apiResponse is not None and len(apiResponse) == 0:
 				raise exceptions.invalidBeatmapException
 
 			# Loop through all beatmaps in this set and save them in db

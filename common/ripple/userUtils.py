@@ -369,7 +369,8 @@ def calculateClanRating(clanID, gameMode):
 	:param gameMode: game mode number
 	:return: clan rating
 	"""
-	
+	if(gameMode != 0):
+		return
 	total_rating = 0
 	
 	# 1. Sum of user performances

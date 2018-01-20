@@ -38,7 +38,8 @@ class handler(requestsManager.asyncRequestHandler):
 			password = self.get_argument("h","")
 			userID = userUtils.getID(username)
 			if not userUtils.checkLogin(userID, password):
-				raise exceptions.loginFailedException(MODULE_NAME, username)
+				self.write("error:pass")
+				return
 			gameMode = self.get_argument("m", "-1")
 			rankedStatus = self.get_argument("r", "-1")
 			query = self.get_argument("q", "")
