@@ -109,8 +109,8 @@ class handler(requestsManager.asyncRequestHandler):
 			# Create score object and set its data
 			log.info("{} has submitted a score on {}...".format(username, scoreData[0]))
 			s = score.score()
-			oldStats = userUtils.getUserStats(userID, s.gameMode)
 			s.setDataFromScoreData(scoreData)
+			oldStats = userUtils.getUserStats(userID, s.gameMode)
 			if ((s.passed == False and s.score < 1000) or s.score < 1):
 				return
 
@@ -356,12 +356,12 @@ class handler(requestsManager.asyncRequestHandler):
 				log.debug("Generated output for online ranking screen!")
 				log.debug(msg)
 				s.calculateAccuracy()
-				# scores vk bot
-				userStats = userUtils.getUserStats(userID, s.gameMode)
+				# scores discord/VK bot
+				#userStats = userUtils.getUserStats(userID, s.gameMode)
 				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250:					
 					glob.redis.publish("scores:new_score", json.dumps({
 					"gm":s.gameMode,
-					"user":{"username":username, "userID": userID, "rank":userStats["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":userStats["accuracy"], "oldpp":oldStats["pp"],"pp":userStats["pp"]},
+					"user":{"username":username, "userID": userID, "rank":newUserData["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":newUserData["accuracy"], "oldpp":oldStats["pp"],"pp":newUserData["pp"]},
 					"score":{"scoreID": s.scoreID, "mods":s.mods, "accuracy":s.accuracy, "missess":s.cMiss, "combo":s.maxCombo, "pp":s.pp, "rank":newScoreboard.personalBestRank, "ranking":s.rank},
 					"beatmap":{"beatmapID": beatmapInfo.beatmapID, "beatmapSetID": beatmapInfo.beatmapSetID, "max_combo":beatmapInfo.maxCombo, "song_name":beatmapInfo.songName}
 					}))
@@ -378,7 +378,7 @@ class handler(requestsManager.asyncRequestHandler):
 					"beatmapSetID": beatmapInfo.beatmapSetID,
 					"pp":s.pp,
 					"rawoldpp":oldStats["pp"],
-					"rawpp":userStats["pp"]
+					"rawpp":newUserData["pp"]
 					}))
 				# send message to #announce if we're rank #1
 				if newScoreboard.personalBestRank < 51 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:
