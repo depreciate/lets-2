@@ -224,13 +224,9 @@ def calculateAccuracy(userID, gameMode):
 	:return: new accuracy
 	"""
 	# Select what to sort by
-	if gameMode == 0:
-		sortby = "pp"
-	else:
-		sortby = "accuracy"
 	# Get best accuracy scores
 	bestAccScores = glob.db.fetchAll(
-		"SELECT accuracy FROM scores WHERE userid = %s AND play_mode = %s AND completed = 3 ORDER BY " + sortby + " DESC LIMIT 500",
+		"SELECT accuracy FROM scores WHERE userid = %s AND play_mode = %s AND completed = 3 ORDER BY pp DESC LIMIT 500",
 		[userID, gameMode])
 
 	v = 0

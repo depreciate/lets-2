@@ -69,14 +69,15 @@ class connectionsPool:
 		"""
 		db = MySQLdb.connect(*self.config)
 		db.autocommit(True)
-		#db.cursor(MySQLdb.cursors.DictCursor).execute("SET SESSION query_cache_type = 0;")
+
 		# Force utf-8
 		db.set_character_set("utf8")
-		dbc = db.cursor(MySQLdb.cursors.DictCursor)
-		dbc.execute("SET NAMES utf8;")
-		dbc.execute("SET CHARACTER SET utf8;")
-		dbc.execute("SET character_set_connection=utf8;")
-		dbc.close()
+		# dbc = db.cursor(MySQLdb.cursors.DictCursor)
+		# dbc.execute("SET NAMES utf8;")
+		# dbc.execute("SET CHARACTER SET utf8;")
+		# dbc.execute("SET character_set_connection=utf8;")
+		# dbc.close()
+
 		conn = worker(db, temporary)
 		return conn
 
@@ -189,13 +190,16 @@ class db:
 		try:
 			# Create cursor, execute query and commit
 			cursor = worker.connection.cursor(MySQLdb.cursors.DictCursor)
+			cursor.execute("SET NAMES utf8;")
+			cursor.execute("SET CHARACTER SET utf8;")
+			cursor.execute("SET character_set_connection=utf8;")
 			cursor.execute(query, params)
 			log.debug(query)
 			return cursor.lastrowid
-		except MySQLdb.OperationalError:
-			del worker
-			worker = None
-			return self.execute(query, params)
+		# except MySQLdb.OperationalError:
+		# 	del worker
+		# 	worker = None
+		# 	return self.execute(query, params)
 		finally:
 			# Close the cursor and release worker's lock
 			if cursor is not None:
@@ -218,17 +222,20 @@ class db:
 		try:
 			# Create cursor, execute the query and fetch one/all result(s)
 			cursor = worker.connection.cursor(MySQLdb.cursors.DictCursor)
+			cursor.execute("SET NAMES utf8;")
+			cursor.execute("SET CHARACTER SET utf8;")
+			cursor.execute("SET character_set_connection=utf8;")
 			cursor.execute(query, params)
 			log.debug(query)
 			if _all:
 				return cursor.fetchall()
 			else:
 				return cursor.fetchone()
-		except MySQLdb.OperationalError:
-			log.warning("MySQL connection lost! Using next worker...")
-			del worker
-			worker = None
-			return self.fetch(query, params, _all)
+		# except MySQLdb.OperationalError:
+		# 	log.warning("MySQL connection lost! Using next worker...")
+		# 	del worker
+		# 	worker = None
+		# 	return self.fetch(query, params, _all)
 		finally:
 			# Close the cursor and release worker's lock
 			if cursor is not None:
