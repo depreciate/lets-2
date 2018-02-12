@@ -262,6 +262,8 @@ class beatmap:
 			if mainData is not None:
 				self.rankedStatus = rankedStatuses.NOT_SUBMITTED			
 				for beatmap in mainData:
+					if "version" not in beatmap:
+						continue
 					if (beatmap["version"] == self.version):
 						self.rankedStatus = rankedStatuses.NEED_UPDATE
 						break

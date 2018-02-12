@@ -187,6 +187,12 @@ class handler(requestsManager.asyncRequestHandler):
 				log.warning("**{}** ({}) has been restricted due to missing process list".format(username, userID), "cm")
 
 
+			if s.mods & 8320 == 8320:
+				userUtils.restrict(userID)
+				userUtils.appendNotes(userID, "Restricted due to sunpy cheat")
+				log.warning("**{}** ({}) has been restricted due to sunpy cheat", "cm")
+				return
+
 			# Save replay
 
 			if s.passed == True:
