@@ -8,6 +8,7 @@ import tornado.web
 from raven.contrib.tornado import SentryMixin
 
 from objects import beatmap
+from common.constants import mods
 from common.constants import gameModes
 from common.log import logUtils as log
 from common.web import requestsManager
@@ -174,11 +175,11 @@ class handler(requestsManager.asyncRequestHandler):
 			data = {
 				"song_name": bmap.songName,
 				"pp": returnPP,
-				"length": bmap.hitLength,
+				"length": round(bmap.hitLength*0.75) if modsEnum & mods.DOUBLETIME > 0 else bmap.hitLength if modsEnum & mods.HALFTIME < 1 else round(bmap.hitLength*1.50),
 				"stars": stars,
-				"ar": bmap.AR,
-				"od": bmap.OD,
-				"bpm": bmap.bpm,
+				"ar": round(min(10, bmap.AR * 1.4),1) if modsEnum & mods.HARDROCK > 0 else bmap.AR if modsEnum & mods.EASY < 1 else round(max(0, bmap.AR / 2),1),
+				"od": round(min(10, bmap.OD * 1.4),1) if modsEnum & mods.HARDROCK > 0 else bmap.OD if modsEnum & mods.EASY < 1 else round(max(0, bmap.OD / 2),1),
+				"bpm": round(bmap.bpm*1.5) if modsEnum & mods.DOUBLETIME > 0 else bmap.bpm if modsEnum & mods.HALFTIME < 1 else round(bmap.bpm*0.75),
 			}
 			# Set status code and message
 			statusCode = 200

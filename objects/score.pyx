@@ -237,6 +237,9 @@ class score:
 						self.completed = 3
 						self.rankedScoreIncrease = self.score - personalBest["score"]
 						self.oldPersonalBest = personalBest["id"]
+						if self.score < personalBest['score'] :
+							self.oldPersonalBest = 0
+							glob.db.execute("UPDATE scores SET completed = 4 WHERE id = %s",[personalBest["id"]])
 						ok_sub = True
 					else:
 						self.completed = 2
