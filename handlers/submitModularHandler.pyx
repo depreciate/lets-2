@@ -25,6 +25,8 @@ from helpers import aeshelper
 from helpers import leaderboardHelper
 from objects import glob
 from common.sentry import sentry
+from secret import butterCake
+
 
 MODULE_NAME = "submit_modular"
 class handler(requestsManager.asyncRequestHandler):
@@ -80,8 +82,8 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Login and ban check
 			userID = userUtils.getID(username)
-			if "c1" in self.request.arguments:
-				glob.db.execute("INSERT INTO private (userid, c1) VALUES (%s, %s)",[userID, self.get_argument("c1")])
+			#if "c1" in self.request.arguments:
+				#glob.db.execute("INSERT INTO private (userid, c1) VALUES (%s, %s)",[userID, self.get_argument("c1")])
 			
 			# User exists check
 			if userID == 0:
@@ -186,7 +188,7 @@ class handler(requestsManager.asyncRequestHandler):
 				userUtils.appendNotes(userID, "Restricted due to missing process list while submitting a score (most likely he used a score submitter)")
 				log.warning("**{}** ({}) has been restricted due to missing process list".format(username, userID), "cm")
 
-
+			s.playerUserID = userID
 			if s.mods & 8320 == 8320:
 				userUtils.restrict(userID)
 				userUtils.appendNotes(userID, "Restricted due to sunpy cheat")
@@ -389,9 +391,9 @@ class handler(requestsManager.asyncRequestHandler):
 				# send message to #announce if we're rank #1
 				if newScoreboard.personalBestRank < 51 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:
 					userUtils.logUserLog("achieved #{} rank on ".format(newScoreboard.personalBestRank),s.fileMd5, userID, s.gameMode)
-					if newScoreboard.personalBestRank == 1:
+					if newScoreboard.personalBestRank == 1 and oldPersonalBestRank != 1:
 					
-						firstPlacesUpdateThread = threading.Thread(None,lambda : userUtils.recalcFirstPlaces(userID))
+						firstPlacesUpdateThread = threading.Thread(None,  lambda : userUtils.recalcFirstPlaces(userID))
 						firstPlacesUpdateThread.start()
 					
 						annmsg = "[https://osu.gatari.pw/u/{} {}] achieved rank #1 on [https://osu.ppy.sh/b/{} {}] ({})".format(
@@ -404,7 +406,7 @@ class handler(requestsManager.asyncRequestHandler):
 						params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
 						requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 						if (len(newScoreboard.scores) > 2):
-							firstPlacesUpdateThread = threading.Thread(None,lambda : userUtils.recalcFirstPlaces(newScoreboard.scores[2].playerUserID))
+							firstPlacesUpdateThread = threading.Thread(None, lambda : userUtils.recalcFirstPlaces(newScoreboard.scores[2].playerUserID))
 							firstPlacesUpdateThread.start()
 							userUtils.logUserLog("has lost first place on ",s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode)	
 				# Write message to client

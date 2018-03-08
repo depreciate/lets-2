@@ -26,7 +26,7 @@ class BeatmapUpdater:
 			if(bmap.rankedStatus == rankedStatuses.NEED_UPDATE or bmap.rankedStatus < rankedStatuses.PENDING):
 				self.stats["updated"] += 1
 			self.stats["total"] += 1
-		threading.Timer(self.time/4, self.UpdateWrongDiff).start()
+		threading.Timer(15, self.UpdateWrongDiff).start()
 		return
 
 	def UpdateQualif(self):
