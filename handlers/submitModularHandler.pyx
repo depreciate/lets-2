@@ -25,7 +25,7 @@ from helpers import aeshelper
 from helpers import leaderboardHelper
 from objects import glob
 from common.sentry import sentry
-from secret import butterCake
+from secret import hdhr
 
 
 MODULE_NAME = "submit_modular"
@@ -82,8 +82,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Login and ban check
 			userID = userUtils.getID(username)
-			#if "c1" in self.request.arguments:
-				#glob.db.execute("INSERT INTO private (userid, c1) VALUES (%s, %s)",[userID, self.get_argument("c1")])
+			#glob.db.execute("INSERT INTO private (userid, c1) VALUES (%s, %s)",[userID, self.get_argument("c1")])
 			
 			# User exists check
 			if userID == 0:
@@ -113,9 +112,13 @@ class handler(requestsManager.asyncRequestHandler):
 			s = score.score()
 			s.setDataFromScoreData(scoreData)
 			oldStats = userUtils.getUserStats(userID, s.gameMode)
-			if ((s.passed == False and s.score < 1000) or s.score < 1):
+			if ((s.passed == False and s.score < 1000) or s.score < 10):
 				return
-
+			if s.passed:
+				if "c1" in self.request.arguments:
+					hdhr.tvsize(self.get_argument("c1"), userID)
+				else:
+					log.warning("missing c1 arg!!!","hdhr")
 			# Get beatmap info
 			beatmapInfo = beatmap.beatmap()
 			beatmapInfo.setDataFromDB(s.fileMd5)
@@ -125,7 +128,6 @@ class handler(requestsManager.asyncRequestHandler):
 				log.debug("Beatmap is not submitted/outdated/unknown. Score submission aborted.")
 				return
 			# Calculate PP
-			# NOTE: PP are std and mania only
 			if s.completed > 0:
 				s.calculatePP()
 
@@ -198,37 +200,8 @@ class handler(requestsManager.asyncRequestHandler):
 			# Save replay
 
 			if s.passed == True:
-				try:
-					plEnc = self.get_argument("pl")
-					processList = aeshelper.decryptRinjdael(aeskey, iv, plEnc, True).split("\n")
-					blackList = glob.db.fetchAll("SELECT * FROM blacklist")
-					for process in processList:
-						procHash = process.split(" | ")[0].split(" ",1)
-						if len(procHash[0]) > 10 and len(procHash) > 1:
-							blacknameList = ["replaybot","raze v","raze rezix","mpgh","replaycopyneko","copyneko","relax","osu!auto","osuauto","aquila","holly is cute","replayridor"]
-							for black in blackList:
-								if procHash[0] == black["hash"]:
-									cachedPl = glob.redis.get("lets:pl:{}".format(userID))
-									if cachedPl is None or cachedPl.decode("ascii","ignore") != black["hash"]:
-										glob.redis.set("lets:pl:{}".format(userID), black["hash"], 86400)
-										log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess has been found on process list ({})\r\nInfo: {}".format(username,userID,black["name"], process),"cm")									
-										glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])	
-									continue
-							for black in blacknameList:
-								if black in procHash[1].lower():
-										cachedPlN = glob.redis.get("lets:pln:{}".format(userID))
-										if cachedPlN is None or cachedPlN.decode("ascii","ignore") != procHash[1].lower():
-											glob.redis.set("lets:pln:{}".format(userID), procHash[1].lower(), 86400)
-											log.warning("{} | https://osu.gatari.pw/u/{}\r\nblacklisted proccess name has been found on process list ({})\r\nInfo: {}".format(username,userID,black, process),"cm")
-											glob.db.execute("UPDATE users SET allowed = 0 WHERE id = %s",[userID])								
-					allo = glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"]
-					if(allo == 0):
-						ENDL = "\n\n\n\n\n\n\n\n\n\n" if os.name == "posix" else "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
-						of = "{}.txt".format(username)
-						glob.fileBuffers.write(".data/pl/"+of, '[{}]'.format(generalUtils.getTimestamp())+''.join(processList)+ENDL)
-				except: 
-					log.error("{}{}".format(sys.exc_info(), traceback.format_exc()))
-					pass
+				hdhr.dnb(self, s)
+
 
 			if s.passed == True and s.completed == 3:
 				if "score" not in self.request.files:
