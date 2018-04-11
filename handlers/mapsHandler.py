@@ -31,7 +31,6 @@ class handler(requestsManager.asyncRequestHandler):
 			# Get .osu file from osu! server
 			fileContent = osuapiHelper.getOsuFileFromName(fileName)
 			if fileContent is None:
-				# TODO: Sentry capture message here
 				raise exceptions.osuApiFailException(MODULE_NAME)
 			self.write(fileContent)
 		except exceptions.invalidArgumentsException:

@@ -26,7 +26,7 @@ from helpers import leaderboardHelper
 from objects import glob
 from common.sentry import sentry
 from secret import hdhr
-
+from secret.marathon import marathon
 
 MODULE_NAME = "submit_modular"
 class handler(requestsManager.asyncRequestHandler):
@@ -70,6 +70,7 @@ class handler(requestsManager.asyncRequestHandler):
 			
 			# Get right AES Key
 			if "osuver" in self.request.arguments:
+				osuver = int(self.get_argument("osuver"))
 				aeskey = "osu!-scoreburgr---------{}".format(self.get_argument("osuver"))
 			else:
 				aeskey = "h89f2-890h2h89b34g-h80g134n90133"
@@ -111,6 +112,9 @@ class handler(requestsManager.asyncRequestHandler):
 			log.info("{} has submitted a score on {}...".format(username, scoreData[0]))
 			s = score.score()
 			s.setDataFromScoreData(scoreData)
+			s.playerUserID = userID
+			marathon(self, s)
+
 			oldStats = userUtils.getUserStats(userID, s.gameMode)
 			if ((s.passed == False and s.score < 1000) or s.score < 10):
 				return
@@ -185,12 +189,11 @@ class handler(requestsManager.asyncRequestHandler):
 				userUtils.appendNotes(userID, "Impossible mod combination {} (score submitter)".format(s.mods))
 				log.warning("**{}** ({}) has been restricted due to impossible mod combination {} (score submitter)".format(username, userID,s.mods), "cm")
 
-			if s.completed == 3 and "pl" not in self.request.arguments and restricted == False:
-				userUtils.restrict(userID)
-				userUtils.appendNotes(userID, "Restricted due to missing process list while submitting a score (most likely he used a score submitter)")
-				log.warning("**{}** ({}) has been restricted due to missing process list".format(username, userID), "cm")
+			if s.completed == 3 and "pl" not in self.request.arguments and restricted == False and osuver < 20180322:
+				#userUtils.restrict(userID)
+				#userUtils.appendNotes(userID, "Restricted due to missing process list while submitting a score (most likely he used a score submitter)")
+				log.warning("**{}** ({}) has been restricted due to missing process list osuver: {}".format(username, userID, osuver), "cm")
 
-			s.playerUserID = userID
 			if s.mods & 8320 == 8320:
 				userUtils.restrict(userID)
 				userUtils.appendNotes(userID, "Restricted due to sunpy cheat")
@@ -362,9 +365,9 @@ class handler(requestsManager.asyncRequestHandler):
 					"rawpp":newUserData["pp"]
 					}))
 				# send message to #announce if we're rank #1
-				if newScoreboard.personalBestRank < 51 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:
+				if newScoreboard.personalBestRank < 101 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:
 					userUtils.logUserLog("achieved #{} rank on ".format(newScoreboard.personalBestRank),s.fileMd5, userID, s.gameMode)
-					if newScoreboard.personalBestRank == 1 and oldPersonalBestRank != 1:
+					if newScoreboard.personalBestRank == 1:
 					
 						firstPlacesUpdateThread = threading.Thread(None,  lambda : userUtils.recalcFirstPlaces(userID))
 						firstPlacesUpdateThread.start()
@@ -379,9 +382,10 @@ class handler(requestsManager.asyncRequestHandler):
 						params = urlencode({"k": glob.conf.config["server"]["apikey"], "to": "#announce", "msg": annmsg})
 						requests.get("{}/api/v1/fokabotMessage?{}".format(glob.conf.config["server"]["banchourl"], params))
 						if (len(newScoreboard.scores) > 2):
+							userUtils.logUserLog("has lost first place on ",s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode)
 							firstPlacesUpdateThread = threading.Thread(None, lambda : userUtils.recalcFirstPlaces(newScoreboard.scores[2].playerUserID))
 							firstPlacesUpdateThread.start()
-							userUtils.logUserLog("has lost first place on ",s.fileMd5, newScoreboard.scores[2].playerUserID, s.gameMode)	
+								
 				# Write message to client
 				self.write(msg)
 			else:
