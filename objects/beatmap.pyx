@@ -240,11 +240,9 @@ class beatmap:
 		mainData = None
 		if diffData == None:
 			diffData = osuapiHelper.getDifficulty(md5)
-			if diffData is not None:
-				self.mode = int(diffData[0]["mode"])
-
+		
 		if diffData is not None:
-			mainData = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m={}".format(md5, self.mode))
+			mainData = osuapiHelper.osuApiRequest("get_beatmaps", "h={}".format(md5))
 	
 		# Can't fint beatmap by MD5. The beatmap has been updated. Check with beatmap set ID
 		if mainData is None:
@@ -256,21 +254,20 @@ class beatmap:
 			return False
 
 		try:
-			mainData = osuapiHelper.osuApiRequest("get_beatmaps", "h={}&a=1&m={}".format(md5, self.mode))
 			if mainData == "timeout":
 				return False
 			self.fileMD5 = md5
 			self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
 		except Exception:
 			return False
-			pass
-										
+			pass								
 		log.debug("Got beatmap data from osu!api")
 		self.songName = "{} - {} [{}]".format(mainData["artist"], mainData["title"], mainData["version"])
 		self.AR = float(mainData["diff_approach"])
 		self.OD = float(mainData["diff_overall"])
 		self.HP = float(mainData["diff_drain"])
 		self.CS = float(mainData["diff_size"])
+		self.mode = int(mainData["mode"])
 		self.artist = mainData["artist"]
 		self.title = mainData["title"]
 		self.rankingDate = int(time.mktime(datetime.datetime.strptime(mainData["last_update"], "%Y-%m-%d %H:%M:%S").timetuple()))

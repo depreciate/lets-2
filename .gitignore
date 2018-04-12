@@ -4,3 +4,5 @@ nohup.out
 handlers/apiPPHandler back.py
 pp/omppcPy back.py
 tomejerry.py
+secret
+test.py
