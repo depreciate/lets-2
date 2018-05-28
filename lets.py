@@ -39,6 +39,7 @@ from handlers import redirectHandler
 from handlers import submitModularHandler
 from handlers import uploadScreenshotHandler
 from handlers import bmsubmitGetid
+from handlers import RateHandler
 from helpers import config
 from helpers import consoleHelper
 from common import generalUtils
@@ -74,6 +75,7 @@ def make_app():
 		(r"/api/v1/cacheBeatmap", apiCacheBeatmapHandler.handler),
 
 		#WIP
+		(r"/web/osu-rate.php", RateHandler.handler),
 		(r"/web/osu-osz2-bmsubmit-getid.php", bmsubmitGetid.handler),
 		#WIP
 
@@ -83,7 +85,6 @@ def make_app():
 
 		# Not done yet
 		(r"/web/lastfm.php", emptyHandler.handler),
-		(r"/web/osu-rate.php", emptyHandler.handler),
 		(r"/web/osu-comment.php", emptyHandler.handler),
 		(r"/web/osu-checktweets.php", emptyHandler.handler),
 		(r"/loadTest", loadTestHandler.handler),

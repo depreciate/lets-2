@@ -5,7 +5,7 @@ import sys
 import traceback
 import threading
 from urllib.parse import urlencode
-
+import datetime
 import requests
 import tornado.gen
 import tornado.web
@@ -132,7 +132,7 @@ class handler(requestsManager.asyncRequestHandler):
 				log.debug("Beatmap is not submitted/outdated/unknown. Score submission aborted.")
 				return
 			# Calculate PP
-			if s.completed > 0:
+			if s.completed > 0 and s.pp == 0.00:
 				s.calculatePP()
 
 			# Restrict obvious cheaters
@@ -225,7 +225,7 @@ class handler(requestsManager.asyncRequestHandler):
 				log.error("Replay for score {} not saved!!".format(s.scoreID), "bunker")
 
 			# Update beatmap playcount (and passcount)
-			#beatmap.incrementPlaycount(s.fileMd5, s.passed)
+			beatmap.incrementPlaycount(s.fileMd5, s.passed)
 
 			# Get "before" stats for ranking panel (only if passed)
 			if s.passed:
@@ -283,15 +283,16 @@ class handler(requestsManager.asyncRequestHandler):
 
 				# Get rank info (current rank, pp/score to next rank, user who is 1 rank above us)
 				rankInfo = leaderboardHelper.getRankInfo(userID, s.gameMode)
-
+				playsInfo = glob.db.fetch("SELECT * FROM beatmap_plays WHERE beatmap_md5 = %s",[beatmapInfo.fileMD5])
+				if playsInfo is None:
+					playsInfo = {'passcount': 1, 'playcount': 1}
 				# Output dictionary
 				output = collections.OrderedDict()
 				output["beatmapId"] = beatmapInfo.beatmapID
 				output["beatmapSetId"] = beatmapInfo.beatmapSetID
-				output["beatmapPlaycount"] = beatmapInfo.playcount
-				output["beatmapPasscount"] = beatmapInfo.passcount
-				#output["approvedDate"] = "2015-07-09 23:20:14\n"
-				output["approvedDate"] = "\n"
+				output["beatmapPlaycount"] = playsInfo['playcount']
+				output["beatmapPasscount"] = playsInfo['passcount']
+				output["approvedDate"] = datetime.datetime.fromtimestamp(int(beatmapInfo.rankingDate)).strftime('%Y-%m-%d %H:%M:%S\n')
 				output["chartId"] = "overall"
 				output["chartName"] = "Overall Ranking"
 				output["chartEndDate"] = ""
@@ -342,10 +343,11 @@ class handler(requestsManager.asyncRequestHandler):
 				s.calculateAccuracy()
 				# scores discord/VK bot
 				#userStats = userUtils.getUserStats(userID, s.gameMode)
-				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250:					
+				if s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED and s.pp > 250:			
+					vk = glob.db.fetch("select vk from users where id = %s",[userID])['vk']		
 					glob.redis.publish("scores:new_score", json.dumps({
 					"gm":s.gameMode,
-					"user":{"username":username, "userID": userID, "rank":newUserData["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":newUserData["accuracy"], "oldpp":oldStats["pp"],"pp":newUserData["pp"]},
+					"user":{"username":username, "userID": userID, "vk":vk,"rank":newUserData["gameRank"],"oldaccuracy":oldStats["accuracy"],"accuracy":newUserData["accuracy"], "oldpp":oldStats["pp"],"pp":newUserData["pp"]},
 					"score":{"scoreID": s.scoreID, "mods":s.mods, "accuracy":s.accuracy, "missess":s.cMiss, "combo":s.maxCombo, "pp":s.pp, "rank":newScoreboard.personalBestRank, "ranking":s.rank},
 					"beatmap":{"beatmapID": beatmapInfo.beatmapID, "beatmapSetID": beatmapInfo.beatmapSetID, "max_combo":beatmapInfo.maxCombo, "song_name":beatmapInfo.songName}
 					}))

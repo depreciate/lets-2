@@ -41,6 +41,8 @@ def stringMd5(s):
 	:param s: input string
 	:return: `string`'s md5
 	"""
+	if s is None:
+		return None
 	d = hashlib.md5()
 	d.update(s.encode("utf-8"))
 	return d.hexdigest()

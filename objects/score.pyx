@@ -212,37 +212,37 @@ class score:
 
 			# Make sure we don't have another score identical to this one
 			duplicate = glob.db.fetch("SELECT id FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND score = %s LIMIT 1", [userID, self.fileMd5, self.gameMode, self.score])
-			if duplicate is not None:
+			if duplicate is not None and not (self.mods & mods.RELAX > 0 or self.mods & mods.RELAX2 > 0):
 				# Found same score in db. Don't save this score.
 				self.completed = -1
 				return
 
 			# No duplicates found.
 			# Get right "completed" value
-			scoreBest = glob.db.fetch("SELECT id, score, mods, pp, completed FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed > 2 ORDER by score desc LIMIT 1", [userID, self.fileMd5, self.gameMode])
 			personalBest = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed = 3 LIMIT 1", [userID, self.fileMd5, self.gameMode])
 			if personalBest is None:
 				# This is our first score on this map, so it's our best score
 				self.completed = 3
 				self.rankedScoreIncrease = self.score
 				self.oldPersonalBest = 0
-			else:
+			else:			
 				b = beatmap.beatmap(self.fileMd5, 0)
-				self.calculatePP(b=b)
+				if self.pp == 0.00:
+					self.calculatePP(b=b)
 
-				withThisMods = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed>= 3 AND mods = %s ORDER BY pp DESC LIMIT 1", [userID, self.fileMd5, self.gameMode, self.mods])
-				ok_sub = False
+				#scoreBest = glob.db.fetch("SELECT id, score, mods, pp, completed FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed > 2 ORDER by score desc LIMIT 1", [userID, self.fileMd5, self.gameMode])				ok_sub = False
 				if b.rankedStatus != rankedStatuses.LOVED:
 					if self.pp > personalBest["pp"] or (self.pp == personalBest["pp"] and self.score > personalBest["score"]):
 						self.completed = 3
 						self.rankedScoreIncrease = self.score - personalBest["score"]
 						self.oldPersonalBest = personalBest["id"]
-						if self.score < personalBest['score'] :
+						if self.score <= personalBest['score'] :
 							self.oldPersonalBest = 0
 							glob.db.execute("UPDATE scores SET completed = 4 WHERE id = %s",[personalBest["id"]])
 						ok_sub = True
 					else:
 						self.completed = 2
+						withThisMods = glob.db.fetch("SELECT id, score, mods, pp FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed>= 3 AND mods = %s ORDER BY pp DESC LIMIT 1", [userID, self.fileMd5, self.gameMode, self.mods])
 						if withThisMods is not None:
 							if self.score > withThisMods["score"]:
 								self.rankedScoreIncrease = self.score - withThisMods["score"]
