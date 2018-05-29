@@ -227,11 +227,11 @@ class score:
 				self.oldPersonalBest = 0
 			else:			
 				b = beatmap.beatmap(self.fileMd5, 0)
-				if self.pp == 0.00:
-					self.calculatePP(b=b)
 
 				#scoreBest = glob.db.fetch("SELECT id, score, mods, pp, completed FROM scores WHERE userid = %s AND beatmap_md5 = %s AND play_mode = %s AND completed > 2 ORDER by score desc LIMIT 1", [userID, self.fileMd5, self.gameMode])				ok_sub = False
 				if b.rankedStatus != rankedStatuses.LOVED:
+					if self.pp == 0.00:
+						self.calculatePP(b=b)
 					if self.pp > personalBest["pp"] or (self.pp == personalBest["pp"] and self.score > personalBest["score"]):
 						self.completed = 3
 						self.rankedScoreIncrease = self.score - personalBest["score"]
@@ -259,7 +259,9 @@ class score:
 						self.completed = 3
 						self.rankedScoreIncrease = self.score - personalBest["score"]
 						self.oldPersonalBest = personalBest["id"]
-						ok_sub = True
+					else:
+						self.completed = 2
+					ok_sub = True
 						
 				# Compare personal best's score with current score
 				if(ok_sub == False):

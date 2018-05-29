@@ -552,7 +552,7 @@ def getPP(userID, gameMode):
 	else:
 		return 0
 
-def incrementReplaysWatched(scoreID, userID, gameMode):
+def incrementReplaysWatched(scoreID, userID, gameMode, watcher):
 	"""
 	Increment userID's replays watched by others relative to gameMode
 
@@ -561,11 +561,15 @@ def incrementReplaysWatched(scoreID, userID, gameMode):
 	:return:
 	"""
 	mode = scoreUtils.readableGameMode(gameMode)
-	glob.db.execute(
-		"UPDATE scores SET watched = watched + 1 WHERE id = %s LIMIT 1", [scoreID])
-	glob.db.execute(
-		"UPDATE users_stats SET replays_watched_{mode}=replays_watched_{mode}+1 WHERE id = %s LIMIT 1".format(
-			mode=mode), [userID])
+	isWatched = glob.db.fetch("SELECT id FROM score_views WHERE scoreid = %s AND userid = %s", [scoreID, watcher])
+	if not isWatched:
+		glob.db.execute(
+			"INSERT INTO score_views (scoreid, userid) VALUES (%s, %s)",[scoreID, watcher	])
+		glob.db.execute(
+			"UPDATE scores SET watched = watched + 1 WHERE id = %s LIMIT 1", [scoreID])
+		glob.db.execute(
+			"UPDATE users_stats SET replays_watched_{mode}=replays_watched_{mode}+1 WHERE id = %s LIMIT 1".format(
+				mode=mode), [userID])
 
 def getAqn(userID):
 	"""
