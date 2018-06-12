@@ -369,7 +369,7 @@ class handler(requestsManager.asyncRequestHandler):
 				# send message to #announce if we're rank #1
 				if newScoreboard.personalBestRank < 101 and s.completed == 3 and restricted == False and beatmapInfo.rankedStatus >= rankedStatuses.RANKED:
 					userUtils.logUserLog("achieved #{} rank on ".format(newScoreboard.personalBestRank),s.fileMd5, userID, s.gameMode)
-					if newScoreboard.personalBestRank == 1:
+					if newScoreboard.personalBestRank == 1 and oldPersonalBestRank != 1:
 					
 						firstPlacesUpdateThread = threading.Thread(None,  lambda : userUtils.recalcFirstPlaces(userID))
 						firstPlacesUpdateThread.start()

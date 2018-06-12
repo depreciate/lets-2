@@ -224,11 +224,11 @@ class beatmap:
 		if md5 is None or beatmapSetID is None or beatmapSetID == 0 or md5 == "":
 			return None
 
-			if self.beatmapStatus(md5) == False:
-				glob.db.execute("DELETE FROM beatmaps WHERE beatmap_md5 = %s ",[md5])
+		if self.beatmapStatus(md5) == False:
+			glob.db.execute("DELETE FROM beatmaps WHERE beatmap_md5 = %s ",[md5])
 
-			self.fileMD5 = md5
-			threading.Thread(None, lambda : self.setDataFromOsuApi(md5, beatmapSetID)).start()
+		self.fileMD5 = md5
+		threading.Thread(None, lambda : self.setDataFromOsuApi(md5, beatmapSetID)).start()
 
 
 	def setDataFromOsuApi(self, md5, beatmapSetID, diffData = None):
@@ -243,8 +243,8 @@ class beatmap:
 		return -- True if set, False if not set
 		"""
 		# Check if osuapi is enabled
-		dbMD5 = glob.db.fetch("SELECT beatmap_md5 FROM beatmaps WHERE beatmap_md5 = %s",[md5])
-		if dbMD5 is not None:
+		dbMD5 = glob.db.fetch("SELECT beatmap_md5, ranked FROM beatmaps WHERE beatmap_md5 = %s",[md5])
+		if dbMD5 is not None and self.refresh == False:
 			return True
 
 		mainData = None
@@ -273,6 +273,10 @@ class beatmap:
 			self.rankedStatus = convertRankedStatus(int(mainData["approved"]))
 			if self.rankedStatus == rankedStatuses.QUALIFIED:
 				glob.db.execute("UPDATE beatmaps SET latest_update = latest_update - 219600 WHERE beatmapset_id = %s AND ranked != 4",[beatmapSetID])
+			if dbMD5 is not None:
+				if dbMD5["ranked"] == 4 and self.rankedStatus != rankedStatuses.QUALIFIED:
+					glob.db.execute("UPDATE beatmaps SET ranked = %s WHERE beatmapset_id = %s",[self.rankedStatus, beatmapSetID])
+				
 		except Exception:
 			return False							
 		log.debug("Got beatmap data from osu!api")

@@ -87,7 +87,7 @@ class handler(requestsManager.asyncRequestHandler):
 				friends = True
 
 			# Console output
-			fileNameShort = fileName[:32]+"..." if len(fileName) > 32 else fileName[:-4]
+			#fileNameShort = fileName[:32]+"..." if len(fileName) > 32 else fileName[:-4]
 
 			# Create beatmap object and set its data
 			bmap = beatmap.beatmap(md5, beatmapSetID, gameMode, fileName = fileName)

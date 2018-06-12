@@ -114,6 +114,8 @@ class scoreboard:
 		elif self.mods & modsEnum.AUTOPLAY > 0:
 			# Otherwise, filter by pp
 			order = "ORDER BY pp DESC"
+		if self.country:
+			order = "ORDER BY pp DESC"
 		limit = "LIMIT 50"
 
 		# Build query, get params and run query
@@ -227,6 +229,6 @@ class scoreboard:
 
 		# Output top 50 scores
 		for i in self.scores[1:]:
-			data += i.getData(pp=self.mods > -1 and self.mods & modsEnum.AUTOPLAY > 0)
+			data += i.getData(pp=(self.mods > -1 and self.mods & modsEnum.AUTOPLAY > 0) or self.country)
 
 		return data
