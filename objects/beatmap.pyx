@@ -60,23 +60,19 @@ class beatmap:
 		"""
 		Add current beatmap data in db if not in yet
 		"""
-		# Make sure the beatmap is not already in db
+
 		if self.fileMD5 is None:
 			self.rankedStatus = rankedStatuses.NOT_SUBMITTED
 			return 
+
+		# Make sure the beatmap is not already in db
 		bdata = glob.db.fetch("SELECT ranked_status_freezed, ranked FROM beatmaps WHERE beatmap_md5 LIKE %s LIMIT 1", [self.fileMD5])
 		if bdata is not None:
-			# This beatmap is already in db, remove old record
-			# Get current frozen status
 			frozen = bdata["ranked_status_freezed"]
 			if frozen > 0:
 				self.rankedStatus = bdata["ranked"]
 		
-			#glob.db.execute("DELETE FROM beatmaps WHERE id = %s LIMIT 1", [bdata["id"]])
-			if frozen == 0 and self.rankedStatus > 2:
-				if(self.rankedStatus == 2 and bdata["ranked"] == 4):
-					log.warning("rankedstatus 2 bdata = 4 {}".format(self.fileMD5))
-					glob.db.execute("DELETE FROM scores WHERE beatmap_md5 = %s",[self.fileMD5] )
+			if frozen == 0 and self.rankedStatus > 1: 
 				glob.db.execute("UPDATE `beatmaps` SET   `ranking_data` = %s WHERE beatmap_id = %s ", [
 				self.rankingDate if self.rankedStatus > 0 else 0,
 				self.beatmapID
@@ -101,9 +97,6 @@ class beatmap:
 			])
 		
 		else:
-			# Unfreeze beatmap status
-			#log.warning("karti net v db md5={},id={} rank={}".format(self.fileMD5, self.beatmapID,self.rankedStatus))
-			#glob.db.execute("DELETE FROM beatmaps WHERE beatmap_id = %s ",[self.beatmapID])
 			frozen = 0
 			try:
 				glob.db.execute("INSERT INTO `beatmaps` (`beatmap_id`, `beatmapset_id`, `beatmap_md5`, `song_name`, `artist`,`title`,`version`, `creator`, `mode`, `ar`, `od`,`hp`,`cs`, `difficulty_std`, `difficulty_taiko`, `difficulty_ctb`, `difficulty_mania`, `max_combo`, `hit_length`, `bpm`, `ranked`, `latest_update`, `ranked_status_freezed`, `ranking_data`) VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
@@ -133,7 +126,8 @@ class beatmap:
 					self.rankingDate if self.rankedStatus > 0 else 0
 				])
 			except:
-				glob.db.execute("DELETE FROM beatmaps WHERE beatmap_id = %s ",[self.beatmapID])
+				log.error("smth went wron on {} id".format(self.beatmapID))
+				#glob.db.execute("DELETE FROM beatmaps WHERE beatmap_id = %s ",[self.beatmapID])
 				self.rankedStatus = rankedStatuses.NEED_UPDATE
 				pass
 
@@ -166,9 +160,8 @@ class beatmap:
 			expire /= 3 
 		# Make sure the beatmap data in db is not too old
 		if int(expire) > 0 and time.time() > data["latest_update"]+int(expire):
-			self.setDataFromDict(data)
-			self.refresh = True
-			return True
+			if data["ranked_status_freezed"] == 0:
+				self.refresh = True
 
 		# Data in DB, set beatmap data
 		log.debug("Got beatmap data from db")
@@ -210,21 +203,33 @@ class beatmap:
 		self.passcount = int(data["passcount"]) if "passcount" in data else 0
 
 	def beatmapStatus(self, md5):
+		status = glob.redis.get("lets:beatmap_status:{}".format(md5))
+		if status is not None:
+			status = int(status)
+			if status < 2:
+				self.rankedStatus = status
+				return False
+			return True
 		fileContent = osuapiHelper.getOsuFileFromName(self.fileName)
 		if fileContent is not None:
 			fileMD5 = generalUtils.stringMd5(fileContent.decode())
+			status = 2
+			result = True
 			if fileMD5 != md5:
 				self.rankedStatus = rankedStatuses.NEED_UPDATE
-				return False
-			return True
+				status = 1
+				result = False
 		else:
 			self.rankedStatus = rankedStatuses.NOT_SUBMITTED
-			return False
+			status = -1
+			result = False
+		glob.redis.set("lets:beatmap_status:{}".format(md5), status, 300)
+		return result
 	def refreshBeatmap(self, md5, beatmapSetID):
 		if md5 is None or beatmapSetID is None or beatmapSetID == 0 or md5 == "":
 			return None
 
-		if self.beatmapStatus(md5) == False:
+		if self.beatmapStatus(md5) == False and self.fileName != "":
 			glob.db.execute("DELETE FROM beatmaps WHERE beatmap_md5 = %s ",[md5])
 
 		self.fileMD5 = md5
@@ -260,12 +265,10 @@ class beatmap:
 			match = True if mainData["artist"].lower().startswith('madevil') else match
 			if match:
 				mainData = None
-		# Can't fint beatmap by MD5. The beatmap has been updated. Check with beatmap set ID
+		# Can't fint beatmap by MD5. The beatmap has been updated.
 		if mainData is None:
 			log.error("Beatmap data from osu api is empty! beatmap_md5 = {}".format(md5))
-			glob.db.execute("DELETE FROM beatmaps WHERE beatmap_md5 = %s ",[md5])
 			self.fileMD5 = None
-
 			return False
 
 		try:
@@ -355,11 +358,11 @@ class beatmap:
 
 		return -- beatmap header for getscores
 		"""
+		rankedStatusOutput = self.rankedStatus
 		# Fix loved maps for old clients
 		if version < 4 and self.rankedStatus == rankedStatuses.LOVED:
 			rankedStatusOutput = rankedStatuses.QUALIFIED
-		else:
-			rankedStatusOutput = self.rankedStatus
+			
 		data = "{}|false".format(rankedStatusOutput)
 		if self.rankedStatus != rankedStatuses.NOT_SUBMITTED and self.rankedStatus != rankedStatuses.NEED_UPDATE and self.rankedStatus != rankedStatuses.UNKNOWN:
 			# If the beatmap is updated and exists, the client needs more data

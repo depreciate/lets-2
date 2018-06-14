@@ -1,8 +1,13 @@
-
-nohup.out
+**/__pycache__
+**/build
+config.ini
+filters.txt
+.data
+.idea
+redistest.py
+*.c
+*.so
 *.pyc
-handlers/apiPPHandler back.py
-pp/omppcPy back.py
-tomejerry.py
-secret
+/secret
 test.py
+tomejerry.py

@@ -15,6 +15,8 @@ def getDifficulty(beatmap_md5, nomod=True):
 		return None
 	else:
 		data = ppyFormat.verticalSplit(resp, ["hash", "mode", "mods", "difficulty"])
+		if data is None:
+			return None
 		if nomod == True:
 			newData = []
 			for diff in data:

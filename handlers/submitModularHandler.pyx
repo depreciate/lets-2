@@ -126,6 +126,15 @@ class handler(requestsManager.asyncRequestHandler):
 			# Get beatmap info
 			beatmapInfo = beatmap.beatmap()
 			beatmapInfo.setDataFromDB(s.fileMd5)
+
+			if s.passed:
+				# Try to get oldPersonalBestRank from cache
+				oldPersonalBestRank = glob.personalBestCache.get(userID, s.fileMd5)
+				if oldPersonalBestRank == 0:
+					# oldPersonalBestRank not found in cache, get it from db
+					oldScoreboard = scoreboard.scoreboard(username, s.gameMode, beatmapInfo, False)
+					oldScoreboard.setPersonalBest()
+					oldPersonalBestRank = oldScoreboard.personalBestRank if oldScoreboard.personalBestRank > 0 else 0			
 			# Make sure the beatmap is submitted and updated
 			if beatmapInfo.rankedStatus <= rankedStatuses.NEED_UPDATE:
 				
@@ -232,14 +241,6 @@ class handler(requestsManager.asyncRequestHandler):
 				# Get stats and rank
 				oldUserData = glob.userStatsCache.get(userID, s.gameMode)
 				oldRank = leaderboardHelper.getUserRank(userID, s.gameMode)
-
-				# Try to get oldPersonalBestRank from cache
-				oldPersonalBestRank = glob.personalBestCache.get(userID, s.fileMd5)
-				if oldPersonalBestRank == 0:
-					# oldPersonalBestRank not found in cache, get it from db
-					oldScoreboard = scoreboard.scoreboard(username, s.gameMode, beatmapInfo, False)
-					oldScoreboard.setPersonalBest()
-					oldPersonalBestRank = oldScoreboard.personalBestRank if oldScoreboard.personalBestRank > 0 else 0
 
 			# Always update users stats (total/ranked score, playcount, level, acc and pp)
 			# even if not passed
